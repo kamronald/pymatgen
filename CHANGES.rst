@@ -1,6 +1,32 @@
 Change log
 ==========
 
+v2018.11.30
+-----------
+* MPRester.query now supports bulk queries for large scale requests. 
+  (@dwinston)
+* MVLRelax52Set which uses VASP 52 pseudopotentials. (@HanmeiTang)
+* EPH calculations in ABINIT (@gmatteo)
+* New ScaleToRelaxedTransformation (@richardtran415)
+* New dimensionality finder, and consolidation of existing algorithms (@utf)
+* New dopant predictor built on structure predictor (@utf)
+* Misc bug fixes (@HanmeiTang, @utf, @tamuhey, @mkhorton, @yiming-xu, @richardtran415)
+
+v2018.11.6
+----------
+* Ionic radius based CrystalNN (@computron)
+* InterfacialReactivity (@dbroberg)
+* Misc bug fixes
+
+v2018.10.18
+-----------
+
+* New bond fragmenter and bond dissociation analysis modules (@samblau)
+* Improvements to MoleculeGraph (@espottesmith)
+* Fix: bug in triclinic tensor conversion to IEEE standard (@montoyjh)
+* Fix: insertion battery summary dictionary format (@jmmshn)
+* Speed improvements to certain tests (@shyuep, @samblau)
+
 v2018.9.30
 ----------
 
