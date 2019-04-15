@@ -4,7 +4,6 @@
 """
 This module provides utility classes for string operations.
 """
-from __future__ import unicode_literals
 import re
 from fractions import Fraction
 
@@ -205,7 +204,7 @@ def disordered_formula(disordered_struct, symbols=('x', 'y', 'z'), fmt='plain'):
         raise ValueError("Structure is not disordered, "
                          "so disordered formula not defined.")
 
-    disordered_site_compositions = {site.species_and_occu
+    disordered_site_compositions = {site.species
                                     for site in disordered_struct if not site.is_ordered}
 
     if len(disordered_site_compositions) > 1:
@@ -285,7 +284,7 @@ def disordered_formula(disordered_struct, symbols=('x', 'y', 'z'), fmt='plain'):
     return "".join(map(str, disordered_formula))[0:-1]
 
 
-class StringColorizer(object):
+class StringColorizer:
     colours = {"default": "",
                "blue": "\x1b[01;34m",
                "cyan": "\x1b[01;36m",

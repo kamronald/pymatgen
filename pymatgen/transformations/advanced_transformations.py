@@ -2,15 +2,10 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-from __future__ import division, unicode_literals
 
 import numpy as np
 from fractions import Fraction
-
-try:
-    from math import gcd
-except ImportError:
-    from fractions import gcd
+from math import gcd
 from itertools import groupby, product
 from string import ascii_lowercase
 from warnings import warn
@@ -150,7 +145,7 @@ class SuperTransformation(AbstractTransformation):
         return True
 
 
-class MultipleSubstitutionTransformation(object):
+class MultipleSubstitutionTransformation:
     """
     Performs multiple substitutions on a structure. For example, can do a
     fractional replacement of Ge in LiGePS with a list of species, creating one
@@ -616,11 +611,11 @@ class MagOrderingTransformation(AbstractTransformation):
         mag_species_occurrences = {}
         for idx, site in enumerate(disordered_structure):
             if not site.is_ordered:
-                op = max(site.species_and_occu.values())
+                op = max(site.species.values())
                 # this very hacky bit of code only works because we know
                 # that on disordered sites in this class, all species are the same
                 # but have different spins, and this is comma-delimited
-                sp = str(list(site.species_and_occu.keys())[0]).split(",")[0]
+                sp = str(list(site.species.keys())[0]).split(",")[0]
                 if sp in mag_species_order_parameter:
                     mag_species_occurrences[sp] += 1
                 else:

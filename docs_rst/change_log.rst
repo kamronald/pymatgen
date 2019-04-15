@@ -1,13 +1,116 @@
 Change log
 ==========
 
+v2019.4.11
+----------
+* Improvements to MimimumDistanceNN (@jmmshn)
+* Improvements to Lobster. (@JaGeo)
+* Implement a metal warning for ISMEAR < 1 and NSW > 0.
+* Misc bug fixes to input sets, including detection of metal systems and 
+  checking for standardization. 
+
+v2019.3.27
+----------
+* Bug fixes for OrderDisorderComparator (@utf), custom k-points
+in MPNonSCFSet (@dyllamt), battery app (@jmmshn), MPSOCSet (@mkhorton),
+more
+* Improvements to COHP (@JaGeo)
+* Support to read WAVEDER files (@knc6)
+* Addition of van Arkel-Ketelaar triangle plots (@richardtran415)
+* Addition of optional user agent to MPRester API calls, see documentation
+for more information (@dwinston)
+
+v2019.3.13
+----------
+* Streamlined Site, PeriodicSite, Molecule and Structure code by abandoning
+  immutability for Site and PeriodicSite.
+* VaspInput class now supports a run_vasp method, which can be used to code
+  runnable python scripts for running simple calculations (custodian still
+  recommended for more complex calculations.). For example, the following is a
+  kpoint convergence script that can be submitted in a queue
+
+.. code-block:: pycon
+
+    from pymatgen import MPRester
+    from pymatgen.io.vasp.sets import MPRelaxSet
+
+
+    VASP_CMD = ["mpirun", "-machinefile", "$PBS_NODEFILE", "-np", "16", "vasp"]
+
+
+    def main():
+        mpr = MPRester()
+        structure = mpr.get_structures("Li2O")[0]
+        for k_dens in [100, 200, 400, 800]:
+            vis = MPRelaxSet(structure, 
+                user_kpoints_settings={"reciprocal_density": k_dens})
+            vi = vis.get_vasp_input()
+            kpoints = vi["KPOINTS"].kpts[0][0]
+            d = "Li2O_kpoints_%d" % kpoints
+ 
+            # Directly run vasp.
+            vi.run_vasp(d, vasp_cmd=VASP_CMD)
+            # Use the final structure as the new initial structure to speed up calculations.
+            structure = Vasprun("%s/vasprun.xml" % d).final_structure
+
+
+    if __name__ == "__main__":
+        main()
+
+* Many pymatgen from_file methods now support pathlib.Path as well as strings.
+* Misc bug fixes.
+
+
+v2019.2.28
+----------
+* Type hints now available for core classes.
+* New pymatgen.util.typing module for useful types.
+* Misc bug fixes.
+
+v2019.2.24
+----------
+* New EntrySet class for easy manipulation of entries to grab subsets, 
+  remove non-ground-states, etc. Makes it easier to grab a large set of entries and work with sub chemical systems. Also MSONable for caching.
+* Performance improvements in core classes and Poscar (@ExpHP).
+* New/changed methods for IcohpCollection and Completecohp
+
+v2019.2.4
+---------
+* New Trajectory class for MD simulations (@sivonxay)
+* Lattice.get_vector_along_lattice_directions (@blondgeek)
+* Misc bug fixes.
+
+v2019.1.24
+----------
+* Python 3 only!
+* Improvements to local environment code including VESTA bond emulation (@utf)
+* Update Cohp analysis (@JaGEO)
+* Updates to Boltztrap2 (@fraricci)
+
+v2019.1.13
+----------
+* Pymatgen is now Py3 ONLY. If you need Py27 support, please use versions 
+  < 2019.1.1.
+* PARCHG parsing from WAVECAR (@mturiansky)
+* Improvements to defect generation algorithms (@dbroberg)
+* Simplifications to COHP plotting (@JaGeo)
+
+v2018.12.12
+-----------
+* Support for IUPAC ordering of elements in Composition formulae (@utf)
+* Various bug fixes including returning integer miller indices, catching negative values in Composition and fixes to graph analysis (@utf), fix to Composition serialization (@jmmshen), defect analysis (@HanmeiTang), removing sites in surfaces (@yiming-xu), and fix to support the new PROCAR format in VASP (@dkorotin)
+* `PMG_MAPI_ENDPOINT` environment variable added to support different endpoints for the Materials Project REST interface (@mkhorton)
+
 v2018.11.30
 -----------
 * MPRester.query now supports bulk queries for large scale requests. 
   (@dwinston)
-* MVLRelax52Set which uses VASP 52 pseudopotentials. (@hanmeitang)
-* EPH calculations in ABINIT (@gmatteo) 
-* Misc bug fixes.
+* MVLRelax52Set which uses VASP 52 pseudopotentials. (@HanmeiTang)
+* EPH calculations in ABINIT (@gmatteo)
+* New ScaleToRelaxedTransformation (@richardtran415)
+* New dimensionality finder, and consolidation of existing algorithms (@utf)
+* New dopant predictor built on structure predictor (@utf)
+* Misc bug fixes (@HanmeiTang, @utf, @tamuhey, @mkhorton, @yiming-xu, @richardtran415)
 
 v2018.11.6
 ----------

@@ -2,7 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-from __future__ import division, unicode_literals, print_function
 
 import math
 import re
@@ -10,17 +9,11 @@ import os
 import textwrap
 import warnings
 from collections import OrderedDict, deque
-
-import six
-from six.moves import zip, cStringIO
-
+from io import StringIO
 import numpy as np
 from functools import partial
-
-try:
-    from inspect import getfullargspec as getargspec
-except ImportError:
-    from inspect import getargspec
+from pathlib import Path
+from inspect import getfullargspec as getargspec
 from itertools import groupby
 from pymatgen.core.periodic_table import Element, Specie, get_el_sp, DummySpecie
 from monty.io import zopen
@@ -41,8 +34,6 @@ from pymatgen.symmetry.maggroups import MagneticSpaceGroup
 try:
     from pybtex.database import BibliographyData, Entry
 except ImportError:
-    warnings.warn("Please install optional dependency pybtex if you"
-                  "want to extract references from CIF files.")
     BibliographyData, Entry = None, None
 
 """
@@ -81,7 +72,7 @@ def _get_cod_data():
     return _COD_DATA
 
 
-class CifBlock(object):
+class CifBlock:
     maxlen = 70  # not quite 80 so we can deal with semicolons and things
 
     def __init__(self, data, loops, header):
@@ -182,7 +173,6 @@ class CifBlock(object):
         string = re.sub(r"^\s*\n", "", string, flags=re.MULTILINE)
         # remove non_ascii
         string = remove_non_ascii(string)
-
         # since line breaks in .cif files are mostly meaningless,
         # break up into a stream of tokens to parse, rejoining multiline
         # strings (between semicolons)
@@ -226,7 +216,10 @@ class CifBlock(object):
             if s[0] == "_eof":
                 break
             if s[0].startswith("_"):
-                data[s[0]] = "".join(q.popleft())
+                try:
+                    data[s[0]] = "".join(q.popleft())
+                except IndexError:
+                    data[s[0]] = ""
             elif s[0].startswith("loop_"):
                 columns = []
                 items = []
@@ -252,7 +245,7 @@ class CifBlock(object):
         return cls(data, loops, header)
 
 
-class CifFile(object):
+class CifFile:
     """
     Reads and parses CifBlocks from a .cif file or string
     """
@@ -291,11 +284,11 @@ class CifFile(object):
 
     @classmethod
     def from_file(cls, filename):
-        with zopen(filename, "rt", errors="replace") as f:
+        with zopen(str(filename), "rt", errors="replace") as f:
             return cls.from_string(f.read())
 
 
-class CifParser(object):
+class CifParser:
     """
     Parses a CIF file. Attempts to fix CIFs that are out-of-spec, but will
     issue warnings if corrections applied. These are also stored in the
@@ -313,7 +306,7 @@ class CifParser(object):
     def __init__(self, filename, occupancy_tolerance=1., site_tolerance=1e-4):
         self._occupancy_tolerance = occupancy_tolerance
         self._site_tolerance = site_tolerance
-        if isinstance(filename, six.string_types):
+        if isinstance(filename, (str, Path)):
             self._cif = CifFile.from_file(filename)
         else:
             self._cif = CifFile.from_string(filename.read())
@@ -378,7 +371,7 @@ class CifParser(object):
         Returns:
             CifParser
         """
-        stream = cStringIO(cif_string)
+        stream = StringIO(cif_string)
         return CifParser(stream, occupancy_tolerance)
 
     def _sanitize_data(self, data):
@@ -673,7 +666,7 @@ class CifParser(object):
                                "_space_group_symop_operation_xyz_"]:
             if data.data.get(symmetry_label):
                 xyz = data.data.get(symmetry_label)
-                if isinstance(xyz, six.string_types):
+                if isinstance(xyz, str):
                     msg = "A 1-line symmetry op P1 CIF is detected!"
                     warnings.warn(msg)
                     self.errors.append(msg)
@@ -767,14 +760,14 @@ class CifParser(object):
         if data.data.get("_space_group_symop_magn_operation.xyz"):
 
             xyzt = data.data.get("_space_group_symop_magn_operation.xyz")
-            if isinstance(xyzt, six.string_types):
+            if isinstance(xyzt, str):
                 xyzt = [xyzt]
             magsymmops = [MagSymmOp.from_xyzt_string(s) for s in xyzt]
 
             if data.data.get("_space_group_symop_magn_centering.xyz"):
 
                 xyzt = data.data.get("_space_group_symop_magn_centering.xyz")
-                if isinstance(xyzt, six.string_types):
+                if isinstance(xyzt, str):
                     xyzt = [xyzt]
                 centering_symops = [MagSymmOp.from_xyzt_string(s) for s in xyzt]
 
@@ -883,7 +876,8 @@ class CifParser(object):
 
         parsed_sym = None
         # try with special symbols, otherwise check the first two letters,
-        # then the first letter alone. If everything fails try extracting the first letters.
+        # then the first letter alone. If everything fails try extracting the
+        # first letters.
         m_sp = re.match("|".join(special.keys()), sym)
         if m_sp:
             parsed_sym = special[m_sp.group()]
@@ -896,7 +890,7 @@ class CifParser(object):
             if m:
                 parsed_sym = m.group()
 
-        if parsed_sym is not None and (m_sp or not re.match("{}\d*".format(parsed_sym), sym)):
+        if parsed_sym is not None and (m_sp or not re.match(r"{}\d*".format(parsed_sym), sym)):
             msg = "{} parsed as {}".format(sym, parsed_sym)
             warnings.warn(msg)
             self.errors.append(msg)
@@ -1192,7 +1186,7 @@ class CifParser(object):
         return len(self.errors) > 0
 
 
-class CifWriter(object):
+class CifWriter:
     def __init__(self, struct, symprec=None, write_magmoms=False):
         """
         A wrapper around CifFile to write CIF files from pymatgen structures.
@@ -1289,7 +1283,7 @@ class CifWriter(object):
         count = 1
         if symprec is None:
             for site in struct:
-                for sp, occu in sorted(site.species_and_occu.items()):
+                for sp, occu in sorted(site.species.items()):
                     atom_site_type_symbol.append(sp.__str__())
                     atom_site_symmetry_multiplicity.append("1")
                     atom_site_fract_x.append("{0:f}".format(site.a))
@@ -1320,9 +1314,9 @@ class CifWriter(object):
             ]
             for site, mult in sorted(
                     unique_sites,
-                    key=lambda t: (t[0].species_and_occu.average_electroneg,
+                    key=lambda t: (t[0].species.average_electroneg,
                                    -t[1], t[0].a, t[0].b, t[0].c)):
-                for sp, occu in site.species_and_occu.items():
+                for sp, occu in site.species.items():
                     atom_site_type_symbol.append(sp.__str__())
                     atom_site_symmetry_multiplicity.append("%d" % mult)
                     atom_site_fract_x.append("{0:f}".format(site.a))

@@ -1,5 +1,5 @@
-pymatgen\.util package
-======================
+pymatgen.util package
+=====================
 
 Subpackages
 -----------
@@ -23,6 +23,7 @@ Submodules
    pymatgen.util.serialization
    pymatgen.util.string
    pymatgen.util.testing
+   pymatgen.util.typing
 
 Module contents
 ---------------

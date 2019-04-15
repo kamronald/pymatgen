@@ -1,10 +1,6 @@
 # coding: utf-8
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
-
-from __future__ import division, print_function, unicode_literals, \
-    absolute_import
-
 from scipy.linalg import polar
 import numpy as np
 import itertools
@@ -719,7 +715,7 @@ class Tensor(np.ndarray, MSONable):
             return cls(d["input_array"])
 
 
-class TensorCollection(collections.Sequence, MSONable):
+class TensorCollection(collections.abc.Sequence, MSONable):
     """
     A sequence of tensors that can be used for fitting data
     or for having a tensor expansion
@@ -960,7 +956,7 @@ def symmetry_reduce(tensors, structure, tol=1e-8, **kwargs):
     return unique_mapping
 
 
-class TensorMapping(collections.MutableMapping):
+class TensorMapping(collections.abc.MutableMapping):
     """
     Base class for tensor mappings, which function much like
     a dictionary, but use numpy routines to determine approximate

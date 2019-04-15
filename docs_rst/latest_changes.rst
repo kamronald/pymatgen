@@ -1,10 +1,10 @@
 Change log
 ==========
 
-v2018.11.30
------------
-* MPRester.query now supports bulk queries for large scale requests. 
-  (@dwinston)
-* MVLRelax52Set which uses VASP 52 pseudopotentials. (@hanmeitang)
-* EPH calculations in ABINIT (@gmatteo) 
-* Misc bug fixes.
+v2019.4.11
+----------
+* Improvements to MimimumDistanceNN (@jmmshn)
+* Improvements to Lobster. (@JaGeo)
+* Implement a metal warning for ISMEAR < 1 and NSW > 0.
+* Misc bug fixes to input sets, including detection of metal systems and 
+  checking for standardization. 

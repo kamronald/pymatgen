@@ -2,7 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-from __future__ import unicode_literals
 
 
 import unittest
@@ -202,7 +201,7 @@ class PourbaixDiagramTest(unittest.TestCase):
                               conc_dict={"Ag": 1e-8, "Te": 1e-8})
         self.assertEqual(len(pbx.stable_entries), 30)
         test_entry = pbx.find_stable_entry(8, 2)
-        self.assertAlmostEqual(test_entry.energy, 2.3936747835000016, 3)
+        self.assertAlmostEqual(test_entry.energy, 2.3894017960000009, 3)
 
         # Test custom ions
         entries = mpr.get_pourbaix_entries(["Sn", "C", "Na"])
@@ -211,7 +210,7 @@ class PourbaixDiagramTest(unittest.TestCase):
         pbx = PourbaixDiagram(entries + [custom_ion_entry], filter_solids=True,
                               comp_dict={"Na": 1, "Sn": 12, "C": 24})
         self.assertAlmostEqual(pbx.get_decomposition_energy(custom_ion_entry, 5, 2),
-                               8.31202738629504, 2)
+                               8.31202738629504, 1)
 
     def test_nofilter(self):
         entries = self.test_data['Ag-Te']
@@ -255,7 +254,7 @@ class PourbaixPlotterTest(unittest.TestCase):
         self.plotter = PourbaixPlotter(self.pd)
 
     def tearDown(self):
-        warnings.resetwarnings()
+        warnings.simplefilter("default")
 
     def test_plot_pourbaix(self):
         plotter = PourbaixPlotter(self.pd)

@@ -2,7 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-from __future__ import unicode_literals, division, print_function
 
 import numpy as np
 import unittest
@@ -79,9 +78,9 @@ class EOSTest(PymatgenTest):
             for param in ('b0', 'b1', 'e0', 'b0'):
                 # TODO: solutions only stable to 2 decimal places
                 # between different machines, this seems far too low?
-                self.assertAlmostEqual(_.results[param],
-                                       test_output[eos_name][param],
-                                       places=1)
+                self.assertArrayAlmostEqual(_.results[param],
+                                            test_output[eos_name][param],
+                                            decimal=1)
 
     def test_fitting(self):
 

@@ -2,7 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-from __future__ import division, unicode_literals
 import numpy as np
 from fractions import Fraction
 from math import gcd, floor, cos
@@ -255,7 +254,7 @@ class GrainBoundary(Structure):
             site_properties=s.site_properties)
 
 
-class GrainBoundaryGenerator(object):
+class GrainBoundaryGenerator:
     """
     This class is to generate grain boundaries (GBs) from bulk
     conventional cell (fcc, bcc can from the primitive cell), and works for Cubic,
@@ -624,7 +623,7 @@ class GrainBoundaryGenerator(object):
         translation_v = unit_normal_v * vacuum_thickness
 
         # construct the final lattice
-        whole_matrix_no_vac = half_lattice.matrix
+        whole_matrix_no_vac = np.array(half_lattice.matrix)
         whole_matrix_no_vac[2] = half_lattice.matrix[2] * 2
         whole_matrix_with_vac = whole_matrix_no_vac.copy()
         whole_matrix_with_vac[2] = whole_matrix_no_vac[2] + translation_v * 2
@@ -2279,7 +2278,7 @@ def fix_pbc(structure, matrix=None):
 
     for site in structure:
         spec.append(site.specie)
-        coord = site.frac_coords
+        coord = np.array(site.frac_coords)
         for i in range(3):
             coord[i] -= floor(coord[i])
             if np.allclose(coord[i], 1):
