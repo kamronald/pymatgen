@@ -1,8 +1,5 @@
 # coding: utf-8
 
-"""
-The dao for pymatgen.
-"""
 
 print("""
 The 道 of Pymatgen

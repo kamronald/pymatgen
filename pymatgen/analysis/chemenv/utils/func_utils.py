@@ -15,8 +15,6 @@ __maintainer__ = "David Waroquiers"
 __email__ = "david.waroquiers@gmail.com"
 __date__ = "Feb 20, 2016"
 
-from typing import Dict
-
 import numpy as np
 from pymatgen.analysis.chemenv.utils.math_utils import power2_inverse_decreasing, power2_decreasing_exp
 from pymatgen.analysis.chemenv.utils.math_utils import smoothstep, smootherstep
@@ -24,7 +22,7 @@ from pymatgen.analysis.chemenv.utils.math_utils import power2_inverse_power2_dec
 
 
 class AbstractRatioFunction:
-    ALLOWED_FUNCTIONS = {}  # type: Dict[str, list]
+    ALLOWED_FUNCTIONS = {}
 
     def __init__(self, function, options_dict=None):
         if function not in self.ALLOWED_FUNCTIONS:

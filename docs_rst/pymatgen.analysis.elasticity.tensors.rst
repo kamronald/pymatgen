@@ -1,7 +1,7 @@
-pymatgen.command\_line.mcsqs\_caller module
+pymatgen.analysis.elasticity.tensors module
 ===========================================
 
-.. automodule:: pymatgen.command_line.mcsqs_caller
+.. automodule:: pymatgen.analysis.elasticity.tensors
    :members:
    :undoc-members:
    :show-inheritance:

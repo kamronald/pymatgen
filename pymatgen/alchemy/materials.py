@@ -2,16 +2,12 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""
-This module provides various representations of transformed structures. A
-TransformedStructure is a structure that has been modified by undergoing a
-series of transformations.
-"""
 
 import os
 import re
 import json
 import datetime
+from copy import deepcopy
 
 from monty.json import MontyDecoder, jsanitize
 
@@ -23,6 +19,12 @@ from monty.json import MSONable
 from pymatgen.io.vasp.sets import MPRelaxSet
 
 from warnings import warn
+
+"""
+This module provides various representations of transformed structures. A
+TransformedStructure is a structure that has been modified by undergoing a
+series of transformations.
+"""
 
 __author__ = "Shyue Ping Ong, Will Richards"
 __copyright__ = "Copyright 2012, The Materials Project"
@@ -201,7 +203,7 @@ class TransformedStructure(MSONable):
 
     def write_vasp_input(self, vasp_input_set=MPRelaxSet, output_dir=".",
                          create_directory=True, **kwargs):
-        r"""
+        """
         Writes VASP input to an output_dir.
 
         Args:
@@ -211,7 +213,7 @@ class TransformedStructure(MSONable):
             output_dir: Directory to output files
             create_directory: Create the directory if not present. Defaults to
                 True.
-            **kwargs: All keyword args supported by the VASP input set.
+            \\*\\*kwargs: All keyword args supported by the VASP input set.
         """
         vasp_input_set(self.final_structure, **kwargs).write_input(
             output_dir, make_dir_if_not_present=create_directory)
@@ -232,12 +234,6 @@ class TransformedStructure(MSONable):
         return "\n".join(output)
 
     def set_parameter(self, key, value):
-        """
-        Set a parameter
-
-        :param key: The string key
-        :param value: The value.
-        """
         self.other_parameters[key] = value
 
     @property
@@ -343,14 +339,8 @@ class TransformedStructure(MSONable):
         return cls(s, history=d["history"],
                    other_parameters=d.get("other_parameters", None))
 
-    def to_snl(self, authors, **kwargs):
-        """
-        Generate SNL from TransformedStructure.
-
-        :param authors: List of authors
-        :param **kwargs: All kwargs supported by StructureNL.
-        :return: StructureNL
-        """
+    def to_snl(self, authors, projects=None, references='', remarks=None,
+               data=None, created_at=None):
         if self.other_parameters:
             warn('Data in TransformedStructure.other_parameters discarded '
                  'during type conversion to SNL')
@@ -362,7 +352,8 @@ class TransformedStructure(MSONable):
                              'url', 'http://pypi.python.org/pypi/pymatgen'),
                          'description': h})
         from pymatgen.util.provenance import StructureNL
-        return StructureNL(self.final_structure, authors, history=hist, **kwargs)
+        return StructureNL(self.final_structure, authors, projects, references,
+                           remarks, data, hist, created_at)
 
     @classmethod
     def from_snl(cls, snl):

@@ -13,7 +13,6 @@ __email__ = "mkhorton@lbl.gov"
 __status__ = "Development"
 __date__ = "Apr 2017"
 
-
 class JonesFaithfulTransformationTest(unittest.TestCase):
 
     def setUp(self):

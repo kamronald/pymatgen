@@ -7,6 +7,7 @@
 Test for the piezo tensor class
 """
 
+
 __author__ = "Shyam Dwaraknath"
 __version__ = "0.1"
 __maintainer__ = "Shyam Dwaraknath"
@@ -31,18 +32,18 @@ class PiezoTest(PymatgenTest):
                                       [0., 0., 0., 0.03839, 0., 0.],
                                       [6.89822, 6.89822, 27.46280, 0., 0., 0.]])
         self.vasp_matrix = np.array([[0., 0., 0., 0., 0., 0.03839],
-                                     [0., 0., 0., 0., 0.03839, 0., 0.],
-                                     [6.89822, 6.89822, 27.46280, 0., 0., 0.]])
+                                      [0., 0., 0., 0., 0.03839, 0., 0.],
+                                      [6.89822, 6.89822, 27.46280, 0., 0., 0.]])
         self.full_tensor_array = [[[0., 0., 0.03839],
                                    [0., 0., 0.],
                                    [0.03839, 0., 0.]],
                                   [[0., 0., 0.],
                                    [0., 0., 0.03839],
-                                   [0., 0.03839, 0.]],
+                                   [0.,  0.03839,  0.]],
                                   [[6.89822, 0., 0.],
-                                   [0., 6.89822, 0.],
-                                   [0., 0., 27.4628]]]
-
+                                   [0.,  6.89822, 0.],
+                                   [0.,  0.,  27.4628]]]
+    
     def test_new(self):
         pt = PiezoTensor(self.full_tensor_array)
         self.assertArrayAlmostEqual(pt, self.full_tensor_array)
@@ -62,7 +63,6 @@ class PiezoTest(PymatgenTest):
         self.assertArrayEqual(pt, self.full_tensor_array)
         self.assertRaises(ValueError, PiezoTensor.from_voigt, bad_voigt)
         self.assertArrayEqual(self.voigt_matrix, pt.voigt)
-
 
 if __name__ == '__main__':
     unittest.main()

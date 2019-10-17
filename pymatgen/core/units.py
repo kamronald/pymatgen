@@ -2,6 +2,15 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
+
+import numpy as np
+import collections
+from numbers import Number
+import numbers
+from functools import partial
+
+import scipy.constants as const
+
 """
 This module implements a FloatWithUnit, which is a subclass of float. It
 also defines supported units for some commonly used units for energy, length,
@@ -10,14 +19,6 @@ another, and additions and subtractions perform automatic conversion if
 units are detected. An ArrayWithUnit is also implemented, which is a subclass
 of numpy's ndarray with similar unit features.
 """
-
-import collections
-import numbers
-from functools import partial
-
-import numpy as np
-
-import scipy.constants as const
 
 __author__ = "Shyue Ping Ong, Matteo Giantomassi"
 __copyright__ = "Copyright 2011, The Materials Project"
@@ -150,11 +151,11 @@ DERIVED_UNITS = {
     }
 }
 
-ALL_UNITS = dict(list(BASE_UNITS.items()) + list(DERIVED_UNITS.items()))  # type: ignore
+ALL_UNITS = dict(list(BASE_UNITS.items()) + list(DERIVED_UNITS.items()))
 SUPPORTED_UNIT_NAMES = tuple([i for d in ALL_UNITS.values() for i in d.keys()])
 
 # Mapping unit name --> unit type (unit names must be unique).
-_UNAME2UTYPE = {}  # type: ignore
+_UNAME2UTYPE = {}
 for utype, d in ALL_UNITS.items():
     assert not set(d.keys()).intersection(_UNAME2UTYPE.keys())
     _UNAME2UTYPE.update({uname: utype for uname in d})
@@ -174,7 +175,7 @@ class UnitError(BaseException):
     """
 
 
-def _check_mappings(u):
+def check_mappings(u):
     for v in DERIVED_UNITS.values():
         for k2, v2 in v.items():
             if all([v2.get(ku, 0) == vu for ku, vu in u.items()]) and \
@@ -212,7 +213,7 @@ class Unit(collections.abc.Mapping):
                 unit[k] += p
         else:
             unit = {k: v for k, v in dict(unit_def).items() if v != 0}
-        self._unit = _check_mappings(unit)
+        self._unit = check_mappings(unit)
 
     def __mul__(self, other):
         new_units = collections.defaultdict(int)
@@ -274,7 +275,7 @@ class Unit(collections.abc.Mapping):
             for d in DERIVED_UNITS.values():
                 if k in d:
                     for k2, v2 in d[k].items():
-                        if isinstance(k2, numbers.Number):
+                        if isinstance(k2, Number):
                             factor *= k2 ** (v2 * v)
                         else:
                             b[k2] += v2 * v
@@ -358,7 +359,6 @@ class FloatWithUnit(float):
         return cls(num, unit, unit_type=unit_type)
 
     def __new__(cls, val, unit, unit_type=None):
-        """Overrides __new__ since we are subclassing a Python primitive/"""
         new = float.__new__(cls, val)
         new._unit = Unit(unit)
         new._unit_type = unit_type
@@ -428,6 +428,14 @@ class FloatWithUnit(float):
         return FloatWithUnit(float(self) ** i, unit_type=None,
                              unit=self._unit ** i)
 
+    def __div__(self, other):
+        val = super().__div__(other)
+        if not isinstance(other, FloatWithUnit):
+            return FloatWithUnit(val, unit_type=self._unit_type,
+                                 unit=self._unit)
+        return FloatWithUnit(val, unit_type=None,
+                             unit=self._unit / other._unit)
+
     def __truediv__(self, other):
         val = super().__truediv__(other)
         if not isinstance(other, FloatWithUnit):
@@ -467,17 +475,11 @@ class FloatWithUnit(float):
         self._unit = state["_unit"]
 
     @property
-    def unit_type(self) -> str:
-        """
-        :return: The type of unit. Energy, Charge, etc.
-        """
+    def unit_type(self):
         return self._unit_type
 
     @property
-    def unit(self) -> str:
-        """
-        :return: The unit, e.g., "eV".
-        """
+    def unit(self):
         return self._unit
 
     def to(self, new_unit):
@@ -541,9 +543,6 @@ class ArrayWithUnit(np.ndarray):
     Error = UnitError
 
     def __new__(cls, input_array, unit, unit_type=None):
-        """
-        Override __new__.
-        """
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
         obj = np.asarray(input_array).view(cls)
@@ -562,18 +561,14 @@ class ArrayWithUnit(np.ndarray):
         self._unit = getattr(obj, "_unit", None)
         self._unit_type = getattr(obj, "_unit_type", None)
 
+    # TODO abstract base class property?
     @property
-    def unit_type(self) -> str:
-        """
-        :return: The type of unit. Energy, Charge, etc.
-        """
+    def unit_type(self):
         return self._unit_type
 
+    # TODO abstract base class property?
     @property
-    def unit(self) -> str:
-        """
-        :return: The unit, e.g., "eV".
-        """
+    def unit(self):
         return self._unit
 
     def __reduce__(self):
@@ -633,35 +628,39 @@ class ArrayWithUnit(np.ndarray):
         if not hasattr(other, "unit_type"):
             return self.__class__(np.array(self).__mul__(np.array(other)),
                                   unit_type=self._unit_type, unit=self._unit)
-        # Cannot use super since it returns an instance of self.__class__
-        # while here we want a bare numpy array.
-        return self.__class__(
-            np.array(self).__mul__(np.array(other)),
-            unit=self.unit * other.unit)
+        else:
+            # Cannot use super since it returns an instance of self.__class__
+            # while here we want a bare numpy array.
+            return self.__class__(
+                np.array(self).__mul__(np.array(other)),
+                unit=self.unit * other.unit)
 
     def __rmul__(self, other):
         if not hasattr(other, "unit_type"):
             return self.__class__(np.array(self).__rmul__(np.array(other)),
                                   unit_type=self._unit_type, unit=self._unit)
-        return self.__class__(
-            np.array(self).__rmul__(np.array(other)),
-            unit=self.unit * other.unit)
+        else:
+            return self.__class__(
+                np.array(self).__rmul__(np.array(other)),
+                unit=self.unit * other.unit)
 
     def __div__(self, other):
         if not hasattr(other, "unit_type"):
             return self.__class__(np.array(self).__div__(np.array(other)),
                                   unit_type=self._unit_type, unit=self._unit)
-        return self.__class__(
-            np.array(self).__div__(np.array(other)),
-            unit=self.unit / other.unit)
+        else:
+            return self.__class__(
+                np.array(self).__div__(np.array(other)),
+                unit=self.unit / other.unit)
 
     def __truediv__(self, other):
         if not hasattr(other, "unit_type"):
             return self.__class__(np.array(self).__truediv__(np.array(other)),
                                   unit_type=self._unit_type, unit=self._unit)
-        return self.__class__(
-            np.array(self).__truediv__(np.array(other)),
-            unit=self.unit / other.unit)
+        else:
+            return self.__class__(
+                np.array(self).__truediv__(np.array(other)),
+                unit=self.unit / other.unit)
 
     def __neg__(self):
         return self.__class__(np.array(self).__neg__(),
@@ -814,9 +813,10 @@ def obj_with_unit(obj, unit):
 
     if isinstance(obj, numbers.Number):
         return FloatWithUnit(obj, unit=unit, unit_type=unit_type)
-    if isinstance(obj, collections.Mapping):
+    elif isinstance(obj, collections.Mapping):
         return {k: obj_with_unit(v, unit) for k, v in obj.items()}
-    return ArrayWithUnit(obj, unit=unit, unit_type=unit_type)
+    else:
+        return ArrayWithUnit(obj, unit=unit, unit_type=unit_type)
 
 
 def unitized(unit):
@@ -844,16 +844,16 @@ def unitized(unit):
             val = f(*args, **kwargs)
             unit_type = _UNAME2UTYPE[unit]
 
-            if isinstance(val, (FloatWithUnit, ArrayWithUnit)):
+            if isinstance(val, FloatWithUnit) or isinstance(val, ArrayWithUnit):
                 return val.to(unit)
 
-            if isinstance(val, collections.abc.Sequence):
+            elif isinstance(val, collections.abc.Sequence):
                 # TODO: why don't we return a ArrayWithUnit?
                 # This complicated way is to ensure the sequence type is
                 # preserved (list or tuple).
                 return val.__class__([FloatWithUnit(i, unit_type=unit_type,
                                                     unit=unit) for i in val])
-            if isinstance(val, collections.abc.Mapping):
+            elif isinstance(val, collections.abc.Mapping):
                 for k, v in val.items():
                     val[k] = FloatWithUnit(v, unit_type=unit_type, unit=unit)
             elif isinstance(val, numbers.Number):

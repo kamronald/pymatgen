@@ -2,9 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""
-This module implements classes to perform bond valence analyses.
-"""
 
 import collections
 import numpy as np
@@ -12,11 +9,16 @@ import operator
 import os
 import functools
 from math import exp, sqrt
+
 from monty.serialization import loadfn
 
 from pymatgen.core.periodic_table import Element, Specie
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.periodic_table import get_el_sp
+
+"""
+This module implements classes to perform bond valence analyses.
+"""
 
 __author__ = "Shyue Ping Ong"
 __copyright__ = "Copyright 2012, The Materials Project"
@@ -65,7 +67,7 @@ def calculate_bv_sum(site, nn_list, scale_factor=1.0):
     el1 = Element(site.specie.symbol)
     bvsum = 0
     for nn in nn_list:
-        el2 = Element(nn.specie.symbol)
+        el2 = Element(nn.site.specie.symbol)
         if (el1 in ELECTRONEG or el2 in ELECTRONEG) and el1 != el2:
             r1 = BV_PARAMS[el1]["r"]
             r2 = BV_PARAMS[el2]["r"]
@@ -73,7 +75,7 @@ def calculate_bv_sum(site, nn_list, scale_factor=1.0):
             c2 = BV_PARAMS[el2]["c"]
             R = r1 + r2 - r1 * r2 * (sqrt(c1) - sqrt(c2)) ** 2 / \
                 (c1 * r1 + c2 * r2)
-            vij = exp((R - nn.nn_distance * scale_factor) / 0.31)
+            vij = exp((R - nn.distance * scale_factor) / 0.31)
             bvsum += vij * (1 if el1.X < el2.X else -1)
     return bvsum
 
@@ -102,7 +104,7 @@ def calculate_bv_sum_unordered(site, nn_list, scale_factor=1):
     for specie1, occu1 in site.species.items():
         el1 = Element(specie1.symbol)
         for nn in nn_list:
-            for specie2, occu2 in nn.species.items():
+            for specie2, occu2 in nn.site.species.items():
                 el2 = Element(specie2.symbol)
                 if (el1 in ELECTRONEG or el2 in ELECTRONEG) and el1 != el2:
                     r1 = BV_PARAMS[el1]["r"]
@@ -111,7 +113,7 @@ def calculate_bv_sum_unordered(site, nn_list, scale_factor=1):
                     c2 = BV_PARAMS[el2]["c"]
                     R = r1 + r2 - r1 * r2 * (sqrt(c1) - sqrt(c2)) ** 2 / \
                         (c1 * r1 + c2 * r2)
-                    vij = exp((R - nn.nn_distance * scale_factor) / 0.31)
+                    vij = exp((R - nn.distance * scale_factor) / 0.31)
                     bvsum += occu1 * occu2 * vij * (1 if el1.X < el2.X else -1)
     return bvsum
 
@@ -392,9 +394,10 @@ class BVAnalyzer:
                 if max_diff > 2:
                     return
 
-                score = functools.reduce(operator.mul,
-                                         [all_prob[attrib[iv]][elements[iv]][vv]
-                                          for iv, vv in enumerate(v_set)])
+                score = six.moves.reduce(
+                    operator.mul,
+                    [all_prob[attrib[iv]][elements[iv]][vv]
+                     for iv, vv in enumerate(v_set)])
                 if score > self._best_score:
                     self._best_vset = v_set
                     self._best_score = score

@@ -2,21 +2,21 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""
-This module defines classes representing non-periodic and periodic sites.
-"""
 
 import collections
 import numpy as np
 
-from monty.json import MSONable
-from monty.dev import deprecated
-
 from pymatgen.core.lattice import Lattice
-from pymatgen.core.periodic_table import Element, Specie, DummySpecie, \
+from pymatgen.core.periodic_table import Element, Specie, DummySpecie,\
     get_el_sp
+from monty.json import MSONable
 from pymatgen.util.coord import pbc_diff
 from pymatgen.core.composition import Composition
+from monty.dev import deprecated
+
+"""
+This module defines classes representing non-periodic and periodic sites.
+"""
 
 
 __author__ = "Shyue Ping Ong"
@@ -79,10 +79,7 @@ class Site(collections.abc.Hashable, MSONable):
         raise AttributeError(a)
 
     @property
-    def species(self) -> Composition:
-        """
-        :return: The species on the site as a composition, e.g., Fe0.5Mn0.5.
-        """
+    def species(self):
         return self._species
 
     @species.setter
@@ -161,11 +158,12 @@ class Site(collections.abc.Hashable, MSONable):
         """
         if self.is_ordered:
             return list(self.species.keys())[0].__str__()
-        sorted_species = sorted(self.species.keys())
-        return ", ".join(["{}:{:.3f}".format(sp, self.species[sp])
-                          for sp in sorted_species])
+        else:
+            sorted_species = sorted(self.species.keys())
+            return ", ".join(["{}:{:.3f}".format(sp, self.species[sp])
+                              for sp in sorted_species])
 
-    @property  # type: ignore
+    @property
     @deprecated(message="Use site.species instead. This will be deprecated with effect from pymatgen 2020.")
     def species_and_occu(self):
         """
@@ -483,9 +481,9 @@ class PeriodicSite(Site, MSONable):
         frac_coords = np.mod(self.frac_coords, 1)
         if in_place:
             self.frac_coords = frac_coords
-            return None
-        return PeriodicSite(self.species, frac_coords, self.lattice,
-                            properties=self.properties)
+        else:
+            return PeriodicSite(self.species, frac_coords, self.lattice,
+                                properties=self.properties)
 
     def is_periodic_image(self, other, tolerance=1e-8, check_lattice=True):
         """

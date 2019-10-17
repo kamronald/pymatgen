@@ -2,8 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""Setup.py for pymatgen."""
-
 import sys
 import platform
 
@@ -12,9 +10,7 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 
 class build_ext(_build_ext):
-    """Extension builder that checks for numpy before install."""
     def finalize_options(self):
-        """Override finalize_options."""
         _build_ext.finalize_options(self)
         # Prevent numpy from thinking it is still in its setup process:
         import builtins
@@ -29,17 +25,6 @@ class build_ext(_build_ext):
 extra_link_args = []
 if sys.platform.startswith('win') and platform.machine().endswith('64'):
     extra_link_args.append('-Wl,--allow-multiple-definition')
-
-cpp_extra_link_args = extra_link_args
-cpp_extra_compile_args = ["-Wno-cpp", "-Wno-unused-function", "-O2", "-march=native", '-std=c++11']
-if sys.platform.startswith('darwin'):
-    cpp_extra_compile_args.append("-stdlib=libc++")
-    cpp_extra_link_args = ["-O2", "-march=native", '-stdlib=libc++']
-
-# https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2017
-if sys.platform.startswith('win'):
-    cpp_extra_compile_args = ['/w', '/O2', '/std:c++14']
-    cpp_extra_link_args = extra_link_args
 
 long_desc = """
 Official docs: [http://pymatgen.org](http://pymatgen.org/)
@@ -101,12 +86,12 @@ who require Python 2.7 should install pymatgen v2018.x.
 setup(
     name="pymatgen",
     packages=find_packages(),
-    version="2019.10.4",
+    version="2019.8.23",
     cmdclass={'build_ext': build_ext},
     setup_requires=['numpy>=1.14.3', 'setuptools>=18.0'],
     python_requires='>=3.6',
     install_requires=["numpy>=1.14.3", "requests", "ruamel.yaml>=0.15.6",
-                      "monty>=3.0.2", "scipy>=1.0.1", "pydispatcher>=2.0.5",
+                      "monty>=2.0.6", "scipy>=1.0.1", "pydispatcher>=2.0.5",
                       "tabulate", "spglib>=1.9.9.44", "networkx>=2.2",
                       "matplotlib>=1.5", "palettable>=3.1.1", "sympy", "pandas"],
     extras_require={
@@ -127,7 +112,7 @@ setup(
         "pymatgen.analysis.magnetism": ["*.json", "*.yaml"],
         "pymatgen.analysis.structure_prediction": ["data/*.json", "*.yaml"],
         "pymatgen.io": ["*.yaml"],
-        "pymatgen.io.vasp": ["*.yaml", "*.json"],
+        "pymatgen.io.vasp": ["*.yaml"],
         "pymatgen.io.lammps": ["templates/*.*"],
         "pymatgen.io.feff": ["*.yaml"],
         "pymatgen.symmetry": ["*.yaml", "*.json", "*.sqlite"],
@@ -173,12 +158,7 @@ setup(
                            extra_link_args=extra_link_args),
                  Extension("pymatgen.util.coord_cython",
                            ["pymatgen/util/coord_cython.c"],
-                           extra_link_args=extra_link_args),
-                 Extension("pymatgen.optimization.neighbors",
-                           ["pymatgen/optimization/neighbors.cpp"],
-                           extra_compile_args=cpp_extra_compile_args,
-                           extra_link_args=cpp_extra_link_args,
-                           language='c++')],
+                           extra_link_args=extra_link_args)],
     entry_points={
           'console_scripts': [
               'pmg = pymatgen.cli.pmg:main',

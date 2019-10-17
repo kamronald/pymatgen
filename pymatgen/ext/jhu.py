@@ -11,6 +11,7 @@ import requests
 import tempfile
 import shutil
 import os
+from monty.tempfile import ScratchDir
 
 from pymatgen.io.vasp.inputs import Kpoints
 

@@ -31,7 +31,7 @@ if __name__ == '__main__':
     allcg = AllCoordinationGeometries()
 
     while True:
-        cg_symbol = input('Enter symbol of the geometry for which you want to get the explicit permutations : ')
+        cg_symbol = raw_input('Enter symbol of the geometry for which you want to get the explicit permutations : ')
         try:
             cg = allcg[cg_symbol]
             break
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     myindices = range(cg.coordination_number)
 
-    test = input('Enter if you want to test all possible permutations ("all" or "a") or a given number of random permutations (i.e. "25")')
+    test = raw_input('Enter if you want to test all possible permutations ("all" or "a") or a given number of random permutations (i.e. "25")')
 
     if test == 'all' or test == 'a':
         perms_iterator = itertools.permutations(myindices)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     else:
         try:
             nperms = int(test)
-        except Exception:
+        except:
             raise ValueError('Could not turn {} into integer ...'.format(test))
         perms_iterator = []
         for ii in range(nperms):
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
             if not np.isclose(min(results[0]), 0.0):
                 print('Following is not 0.0 ...')
-                input(results)
+                raw_input(results)
         print('   => ', algos_results)
         iperm += 1
     t2 = time.clock()

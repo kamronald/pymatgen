@@ -3,6 +3,18 @@
 # Distributed under the terms of the MIT License.
 
 
+'''
+Created on Jun 27, 2012
+'''
+
+
+__author__ = "Shyue Ping Ong"
+__copyright__ = "Copyright 2012, The Materials Project"
+__version__ = "0.1"
+__maintainer__ = "Shyue Ping Ong"
+__email__ = "shyuep@gmail.com"
+__date__ = "Jun 27, 2012"
+
 import unittest
 import os
 import json
@@ -31,7 +43,6 @@ class ExpEntryTest(unittest.TestCase):
 
     def test_str(self):
         self.assertIsNotNone(str(self.entry))
-
 
 if __name__ == "__main__":
     unittest.main()

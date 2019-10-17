@@ -2,9 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""
-Utilities for defects module.
-"""
 
 import math
 
@@ -56,7 +53,7 @@ kb = 8.6173324e-5  # eV / K
 kumagai_to_V = 1.809512739e2  # = Electron charge * 1e10 / VacuumPermittivity Constant
 
 motif_cn_op = {}
-for cn, di in cn_opt_params.items():  # type: ignore
+for cn, di in cn_opt_params.items():
     for mot, li in di.items():
         motif_cn_op[mot] = {'cn': int(cn), 'optype': li[0]}
         motif_cn_op[mot]['params'] = deepcopy(li[1]) if len(li) > 1 else None
@@ -723,10 +720,8 @@ class TopographyAnalyzer:
             self.check_volume()
 
     def check_volume(self):
-        """
-        Basic check for volume of all voronoi poly sum to unit cell volume
-        Note that this does not apply after poly combination.
-        """
+        # Basic check for volume of all voronoi poly sum to unit cell volume
+        # Note that this does not apply after poly combination.
         vol = sum((v.volume for v in self.vnodes)) + sum(
             (v.volume for v in self.cation_vnodes))
         if abs(vol - self.structure.volume) > 1e-8:
@@ -806,9 +801,7 @@ class TopographyAnalyzer:
         return new_s
 
     def print_stats(self):
-        """
-        Print stats such as the MSE dist.
-        """
+
         latt = self.structure.lattice
 
         def get_min_dist(fcoords):
@@ -833,21 +826,12 @@ class TopographyAnalyzer:
         print("MSE dist voro = %s" % str(get_non_framework_dist(voro)))
 
     def write_topology(self, fname="Topo.cif"):
-        """
-        Write topology to a file.
-
-        :param fname: Filename
-        """
         new_s = Structure.from_sites(self.structure)
         for v in self.vnodes:
             new_s.append("Mg", v.frac_coords)
         new_s.to(filename=fname)
 
     def analyze_symmetry(self, tol):
-        """
-        :param tol: Tolerance for SpaceGroupAnalyzer
-        :return: List
-        """
         s = Structure.from_sites(self.framework)
         site_to_vindex = {}
         for i, v in enumerate(self.vnodes):
@@ -865,9 +849,6 @@ class TopographyAnalyzer:
                 if sites[0].specie.symbol == "Li"]
 
     def vtk(self):
-        """
-        Show VTK visualization.
-        """
         if StructureVis is None:
             raise NotImplementedError("vtk must be present to view.")
         lattice = self.structure.lattice
@@ -892,13 +873,6 @@ class VoronoiPolyhedron:
 
     def __init__(self, lattice, frac_coords, polyhedron_indices, all_coords,
                  name=None):
-        """
-        :param lattice:
-        :param frac_coords:
-        :param polyhedron_indices:
-        :param all_coords:
-        :param name:
-        """
         self.lattice = lattice
         self.frac_coords = frac_coords
         self.polyhedron_indices = polyhedron_indices
@@ -906,11 +880,6 @@ class VoronoiPolyhedron:
         self.name = name
 
     def is_image(self, poly, tol):
-        """
-        :param poly: VoronoiPolyhedron
-        :param tol: Coordinate tolerance.
-        :return: Whether a poly is an image of the current one.
-        """
         frac_diff = pbc_diff(poly.frac_coords, self.frac_coords)
         if not np.allclose(frac_diff, [0, 0, 0], atol=tol):
             return False
@@ -928,16 +897,10 @@ class VoronoiPolyhedron:
 
     @property
     def coordination(self):
-        """
-        :return: Coordination number
-        """
         return len(self.polyhedron_indices)
 
     @property
     def volume(self):
-        """
-        :return: Volume
-        """
         return calculate_vol(self.polyhedron_coords)
 
     def __str__(self):
@@ -966,20 +929,11 @@ class ChargeDensityAnalyzer:
 
     @classmethod
     def from_file(cls, chgcar_filename):
-        """
-        Init from a CHGCAR.
-
-        :param chgcar_filename:
-        :return:
-        """
         chgcar = Chgcar.from_file(chgcar_filename)
         return cls(chgcar=chgcar)
 
     @property
     def charge_distribution_df(self):
-        """
-        :return: Charge distribution.
-        """
         if self._charge_distribution_df is None:
             return self._get_charge_distribution_df()
         else:
@@ -987,9 +941,6 @@ class ChargeDensityAnalyzer:
 
     @property
     def extrema_df(self):
-        """
-        :return: The extrema in charge density.
-        """
         if self.extrema_type is None:
             logger.warning(
                 "Please run ChargeDensityAnalyzer.get_local_extrema first!")
@@ -1302,12 +1253,6 @@ class ChargeDensityAnalyzer:
 
 
 def calculate_vol(coords):
-    """
-    Calculate volume given a set of coords.
-
-    :param coords: List of coords.
-    :return: Volume
-    """
     if len(coords) == 4:
         coords_affine = np.ones((4, 4))
         coords_affine[:, 0:3] = np.array(coords)
