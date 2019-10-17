@@ -1,3 +1,4 @@
+
 import unittest
 import os
 import json
@@ -8,6 +9,8 @@ from pymatgen.util.testing import PymatgenTest
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         'test_files')
+
+import scipy
 
 
 class DosTest(PymatgenTest):
@@ -55,9 +58,9 @@ class CompleteDosTest(PymatgenTest):
         site_Cl = self.cdos.structure[1]
 
         self.assertEqual(len(self.cdos.frequencies), 201)
-        self.assertAlmostEqual(self.cdos.pdos[site_Na][30], 0.008058208)
-        self.assertAlmostEqual(self.cdos.get_site_dos(site_Na).densities[30], 0.008058208)
-        self.assertAlmostEqual(self.cdos.pdos[site_Cl][30], 0.0119040783)
+        self.assertAlmostEqual(self.cdos.pdos[site_Na][30],  0.008058208)
+        self.assertAlmostEqual(self.cdos.get_site_dos(site_Na).densities[30],  0.008058208)
+        self.assertAlmostEqual(self.cdos.pdos[site_Cl][30],  0.0119040783)
 
         self.assertIn(Element.Na, self.cdos.get_element_dos())
         self.assertIn(Element.Cl, self.cdos.get_element_dos())
@@ -73,7 +76,6 @@ class CompleteDosTest(PymatgenTest):
 
     def test_str(self):
         self.assertIsNotNone(str(self.cdos))
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,4 +26,3 @@ setuptools*
 .eggs/
 gulptmp_4_1
 .coverage
-.*_cache

@@ -10,7 +10,10 @@ from pymatgen.core import Lattice
 from pymatgen.util.string import transformation_to_string
 from pymatgen.core.operations import MagSymmOp, SymmOp
 
-from typing import Union, List, Tuple
+try:
+    from typing import Union, List, Tuple
+except Exception:
+    pass  # harmless, just used for type hinting in IDE
 
 __author__ = "Matthew Horton"
 __copyright__ = "Copyright 2017, The Materials Project"
@@ -79,9 +82,9 @@ class JonesFaithfulTransformation:
             a = np.array([1, 0, 0])
             b = np.array([0, 1, 0])
             c = np.array([0, 0, 1])
-            b_change, o_shift = transformation_string.split(";")
-            basis_change = b_change.split(",")
-            origin_shift = o_shift.split(",")
+            basis_change, origin_shift = transformation_string.split(";")
+            basis_change = basis_change.split(",")
+            origin_shift = origin_shift.split(",")
             # add implicit multiplication symbols
             basis_change = [re.sub(
                 r'(?<=\w|\))(?=\() | (?<=\))(?=\w) | (?<=(\d|a|b|c))(?=([abc]))',
@@ -99,14 +102,17 @@ class JonesFaithfulTransformation:
             raise ValueError("Failed to parse transformation string.")
 
     @property
-    def P(self) -> List[List[float]]:
+    def P(self):
+        # type: () -> List[List(float)]
         """
+
         :return: transformation matri
         """
         return self._P
 
     @property
-    def p(self) -> List[float]:
+    def p(self):
+        # type: () -> List[float]
         """
 
         :return: translation vector
@@ -114,7 +120,8 @@ class JonesFaithfulTransformation:
         return self._p
 
     @property
-    def inverse(self) -> 'JonesFaithfulTransformation':
+    def inverse(self):
+        # type: () -> JonesFaithfulTransformation
         """
 
         :return: JonesFaithfulTransformation
@@ -123,20 +130,23 @@ class JonesFaithfulTransformation:
         return JonesFaithfulTransformation(Q, -np.matmul(Q, self.p))
 
     @property
-    def transformation_string(self) -> str:
+    def transformation_string(self):
+        # type: () -> str
         """
         :return: transformation string
         """
         return self._get_transformation_string_from_Pp(self.P, self.p)
 
     @staticmethod
-    def _get_transformation_string_from_Pp(P: List[List[float]], p: List[float]) -> str:
+    def _get_transformation_string_from_Pp(P, p):
+        # type: (List[List[float]], List[float]) -> str
         P = np.array(P).transpose()
         P_string = transformation_to_string(P, components=('a', 'b', 'c'))
         p_string = transformation_to_string(np.zeros((3, 3)), p)
         return P_string + ";" + p_string
 
-    def transform_symmop(self, symmop: Union[SymmOp, MagSymmOp]) -> Union[SymmOp, MagSymmOp]:
+    def transform_symmop(self, symmop):
+        # type: (Union[SymmOp, MagSymmOp]) -> Union[SymmOp, MagSymmOp]
         """
         Takes a symmetry operation and transforms it.
         :param symmop: SymmOp or MagSymmOp
@@ -155,9 +165,9 @@ class JonesFaithfulTransformation:
         elif isinstance(symmop, SymmOp):
             return SymmOp.from_rotation_and_translation(
                 rotation_matrix=W_, translation_vec=w_, tol=symmop.tol)
-        raise RuntimeError
 
-    def transform_coords(self, coords: List[List[float]]) -> List[List[float]]:
+    def transform_coords(self, coords):
+        # type: (List[List[float]]) -> List[List[float]]
         """
         Takes a list of co-ordinates and transforms them.
         :param coords: List of coords
@@ -167,7 +177,7 @@ class JonesFaithfulTransformation:
         for x in coords:
             x = np.array(x)
             Q = np.linalg.inv(self.P)
-            x_ = np.matmul(Q, (x - self.p))  # type: ignore
+            x_ = np.matmul(Q, (x - self.p))
             new_coords.append(x_.tolist())
         return new_coords
 

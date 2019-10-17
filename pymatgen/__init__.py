@@ -2,14 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""
-Pymatgen (Python Materials Genomics) is a robust, open-source Python library
-for materials analysis. This is the root package.
-"""
-
-
-# Useful aliases for commonly used objects and modules.
-# Allows from pymatgen import <class> for quick usage.
 import os
 import warnings
 import ruamel.yaml as yaml
@@ -19,7 +11,7 @@ __author__ = "Pymatgen Development Team"
 __email__ = "pymatgen@googlegroups.com"
 __maintainer__ = "Shyue Ping Ong"
 __maintainer_email__ = "shyuep@gmail.com"
-__version__ = "2019.10.4"
+__version__ = "2019.8.23"
 
 SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pmgrc.yaml")
 
@@ -42,14 +34,10 @@ def _load_pmg_settings():
 
 SETTINGS = _load_pmg_settings()
 
+# Useful aliases for commonly used objects and modules.
+# Allows from pymatgen import <class> for quick usage.
 
-from .core.periodic_table import Element, Specie, DummySpecie
-from .core.composition import Composition
-from .core.structure import Structure, IStructure, Molecule, IMolecule
-from .core.lattice import Lattice
-from .core.sites import Site, PeriodicSite
-from .core.operations import SymmOp
-from .core.units import Unit, FloatWithUnit, ArrayWithUnit
+from pymatgen.core import *
 from .electronic_structure.core import Spin, Orbital
 from .ext.matproj import MPRester
 from monty.json import MontyEncoder, MontyDecoder, MSONable

@@ -2,10 +2,6 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-"""
-Classes for reading/manipulating/writing exciting input files.
-"""
-
 import numpy as np
 
 from monty.io import zopen
@@ -22,6 +18,10 @@ from monty.json import MSONable
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.symmetry.bandstructure import HighSymmKpath
 
+"""
+Classes for reading/manipulating/writing exciting input files.
+"""
+
 __author__ = "Christian Vorwerk"
 __copyright__ = "Copyright 2016"
 __version__ = "1.0"
@@ -33,32 +33,31 @@ __date__ = "Nov 28, 2016"
 
 class ExcitingInput(MSONable):
     """
-    Object for representing the data stored in the structure part of the
-    exciting input.
+        Object for representing the data stored in the structure part of the
+        exciting input.
 
-    .. attribute:: structure
-
-        Associated Structure.
-
-    .. attribute:: title
-
-        Optional title string.
-
-    .. attribute:: lockxyz
-
-        Lockxyz attribute for each site if available. A Nx3 array of
-        booleans.
-    """
-
-    def __init__(self, structure, title=None, lockxyz=None):
-        """
         Args:
             structure (Structure):  Structure object.
             title (str): Optional title for exciting input. Defaults to unit
                 cell formula of structure. Defaults to None.
             lockxyz (Nx3 array): bool values for selective dynamics,
                 where N is number of sites. Defaults to None.
-        """
+
+        .. attribute:: structure
+
+            Associated Structure.
+
+        .. attribute:: title
+
+            Optional title string.
+
+        .. attribute:: lockxyz
+
+            Lockxyz attribute for each site if available. A Nx3 array of
+            booleans.
+    """
+
+    def __init__(self, structure, title=None, lockxyz=None):
 
         if structure.is_ordered:
             site_properties = {}
@@ -75,9 +74,6 @@ class ExcitingInput(MSONable):
 
     @property
     def lockxyz(self):
-        """
-        :return: Selective dynamics site properties.
-        """
         return self.structure.site_properties.get("selective_dynamics")
 
     @lockxyz.setter
@@ -161,23 +157,11 @@ class ExcitingInput(MSONable):
 
     @staticmethod
     def from_file(filename):
-        """
-        :param filename: Filename
-        :return: ExcitingInput
-        """
         with zopen(filename, 'rt') as f:
             data = f.read().replace('\n', '')
         return ExcitingInput.from_string(data)
 
     def write_etree(self, celltype, cartesian=False, bandstr=False, symprec=0.4, angle_tolerance=5):
-        """
-        :param celltype:
-        :param cartesian:
-        :param bandstr:
-        :param symprec:
-        :param angle_tolerance:
-        :return:
-        """
         root = ET.Element('input')
         root.set('{http://www.w3.org/2001/XMLSchema-instance}noNamespaceSchemaLocation',
                  'http://xml.exciting-code.org/excitinginput.xsd')
@@ -211,7 +195,7 @@ class ExcitingInput(MSONable):
                                                       basis[i][2])
         # write atomic positions for each species
         index = 0
-        for i in sorted(new_struct.types_of_specie, key=lambda el: el.X):
+        for i in new_struct.types_of_specie:
             species = ET.SubElement(structure, 'species', speciesfile=i.symbol + '.xml')
             sites = new_struct.indices_from_symbol(i.symbol)
 
@@ -233,7 +217,7 @@ class ExcitingInput(MSONable):
 
                 # write atomic positions
                 index = index + 1
-                _ = ET.SubElement(species, 'atom', coord=coord)
+                atom = ET.SubElement(species, 'atom', coord=coord)
         # write bandstructure if needed
         if bandstr and celltype == 'primitive':
             kpath = HighSymmKpath(new_struct, symprec=symprec, angle_tolerance=angle_tolerance)
@@ -250,23 +234,13 @@ class ExcitingInput(MSONable):
                                                       coords[2])
                     if symbol == '\\Gamma':
                         symbol = 'GAMMA'
-                    _ = ET.SubElement(path, 'point', coord=coord, label=symbol)
-        elif bandstr and celltype != 'primitive':
+                    pt = ET.SubElement(path, 'point', coord=coord, label=symbol)
+        elif bandstr and celltype is not 'primitive':
             raise ValueError("Bandstructure is only implemented for the \
                               standard primitive unit cell!")
         return root
 
     def write_string(self, celltype, cartesian=False, bandstr=False, symprec=0.4, angle_tolerance=5):
-        """
-        Writes to a string.
-
-        :param celltype:
-        :param cartesian:
-        :param bandstr:
-        :param symprec:
-        :param angle_tolerance:
-        :return:
-        """
         try:
             root = self.write_etree(celltype, cartesian, bandstr, symprec, angle_tolerance)
             self.indent(root)
@@ -277,17 +251,6 @@ class ExcitingInput(MSONable):
         return string
 
     def write_file(self, celltype, filename, cartesian=False, bandstr=False, symprec=0.4, angle_tolerance=5):
-        """
-        Write to a file.
-
-        :param celltype:
-        :param filename:
-        :param cartesian:
-        :param bandstr:
-        :param symprec:
-        :param angle_tolerance:
-        :return:
-        """
         try:
             root = self.write_etree(celltype, cartesian, bandstr, symprec, angle_tolerance)
             self.indent(root)
@@ -300,13 +263,6 @@ class ExcitingInput(MSONable):
     # Missing PrerryPrint option in the current version of xml.etree.cElementTree
     @staticmethod
     def indent(elem, level=0):
-        """
-        Helper method to indent elements.
-
-        :param elem:
-        :param level:
-        :return:
-        """
         i = "\n" + level * "  "
         if len(elem):
             if not elem.text or not elem.text.strip():

@@ -1,3 +1,4 @@
+
 import unittest
 import os
 import json
@@ -5,6 +6,7 @@ from io import open
 
 from pymatgen.phonon.bandstructure import PhononBandStructure, PhononBandStructureSymmLine
 from pymatgen.util.testing import PymatgenTest
+
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         'test_files')
@@ -29,8 +31,8 @@ class PhononBandStructureSymmLineTest(PymatgenTest):
         self.assertArrayEqual(self.bs.bands.shape, (6, 204))
         self.assertArrayEqual(self.bs.eigendisplacements.shape, (6, 204, 2, 3))
         self.assertArrayAlmostEqual(self.bs.eigendisplacements[3][50][0],
-                                    [0. + 0.j, 0.14166569 + 0.04098339j,
-                                     -0.14166569 - 0.04098339j])
+                              [0. + 0.j, 0.14166569 + 0.04098339j,
+                               -0.14166569 - 0.04098339j])
         self.assertTrue(self.bs.has_eigendisplacements, True)
 
         self.assertArrayEqual(self.bs.min_freq()[0].frac_coords, [0, 0, 0])
@@ -80,7 +82,6 @@ class PhononBandStructureSymmLineTest(PymatgenTest):
     def tearDown(self):
         if os.path.isfile('test.json'):
             os.remove('test.json')
-
 
 if __name__ == '__main__':
     unittest.main()

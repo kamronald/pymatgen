@@ -125,7 +125,6 @@ class RemoveExistingFilterTest(unittest.TestCase):
             self._sm.fit(self._struct_list[-1],
                          transmuter.transformed_structures[-1].final_structure))
 
-
 if __name__ == "__main__":
-    # import sys;sys.argv = ['', 'Test.testName']
+    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

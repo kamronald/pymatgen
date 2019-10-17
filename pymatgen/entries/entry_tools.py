@@ -23,7 +23,7 @@ import itertools
 import csv
 import re
 
-from typing import List, Union, Iterable, Set
+from typing import List, Union
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.composition import Composition
 from pymatgen.analysis.phase_diagram import PDEntry
@@ -152,7 +152,7 @@ class EntrySet(collections.abc.MutableSet, MSONable):
     subsets, dumping into files, etc.
     """
 
-    def __init__(self, entries: Iterable[Union[PDEntry, ComputedEntry, ComputedStructureEntry]]):
+    def __init__(self, entries: List[Union[PDEntry, ComputedEntry, ComputedStructureEntry]]):
         """
         Args:
             entries: All the entries.
@@ -169,19 +169,9 @@ class EntrySet(collections.abc.MutableSet, MSONable):
         return len(self.entries)
 
     def add(self, element):
-        """
-        Add an entry.
-
-        :param element: Entry
-        """
         self.entries.add(element)
 
     def discard(self, element):
-        """
-        Discard an entry.
-
-        :param element: Entry
-        """
         self.entries.discard(element)
 
     @property
@@ -221,21 +211,18 @@ class EntrySet(collections.abc.MutableSet, MSONable):
         Returns:
             EntrySet
         """
-        chem_sys = set(chemsys)
-        if not chem_sys.issubset(self.chemsys):
-            raise ValueError("%s is not a subset of %s" % (chem_sys,
+        chemsys = set(chemsys)
+        if not chemsys.issubset(self.chemsys):
+            raise ValueError("%s is not a subset of %s" % (chemsys,
                                                            self.chemsys))
         subset = set()
         for e in self.entries:
             elements = [sp.symbol for sp in e.composition.keys()]
-            if chem_sys.issuperset(elements):
+            if chemsys.issuperset(elements):
                 subset.add(e)
         return EntrySet(subset)
 
     def as_dict(self):
-        """
-        :return: MSONable dict
-        """
         return {
             "entries": list(self.entries)
         }
@@ -251,19 +238,19 @@ class EntrySet(collections.abc.MutableSet, MSONable):
                 e.g., Li_{2}O
         """
 
-        els = set()  # type: Set[Element]
+        elements = set()
         for entry in self.entries:
-            els.update(entry.composition.elements)
-        elements = sorted(list(els), key=lambda a: a.X)
+            elements.update(entry.composition.elements)
+        elements = sorted(list(elements), key=lambda a: a.X)
         writer = csv.writer(open(filename, "w"), delimiter=unicode2str(","),
                             quotechar=unicode2str("\""),
                             quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(["Name"] + [el.symbol for el in elements] + ["Energy"])
+        writer.writerow(["Name"] + elements + ["Energy"])
         for entry in self.entries:
             row = [entry.name if not latexify_names
                    else re.sub(r"([0-9]+)", r"_{\1}", entry.name)]
             row.extend([entry.composition[el] for el in elements])
-            row.append(str(entry.energy))
+            row.append(entry.energy)
             writer.writerow(row)
 
     @classmethod
@@ -283,7 +270,7 @@ class EntrySet(collections.abc.MutableSet, MSONable):
                                 quoting=csv.QUOTE_MINIMAL)
             entries = list()
             header_read = False
-            elements = []  # type: List[str]
+            elements = None
             for row in reader:
                 if not header_read:
                     elements = row[1:(len(row) - 1)]

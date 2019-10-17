@@ -13,7 +13,7 @@ import json
 import os
 
 from io import open
-from enum import Enum
+from enum import Enum, unique
 from monty.json import MontyEncoder
 
 # The libxc version used to generate this file!
@@ -408,11 +408,6 @@ class LibxcFunc(Enum):
     # end_include_dont_touch
 
     def __init__(self, num):
-        """
-        Init.
-
-        :param num: Number for the xc.
-        """
         info = _all_xcfuncs[self.value]
         self.kind = info["Kind"]
         self.family = info["Family"]

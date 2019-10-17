@@ -102,6 +102,5 @@ class CoplTest(PymatgenTest):
         icohp_eV = self.copl_bise_eV.cohp_data["Bi1-Se7"]["ICOHP"][Spin.up]
         self.assertArrayEqual(icohp, icohp_eV)
 
-
 if __name__ == "__main__":
     unittest.main()
