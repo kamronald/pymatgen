@@ -122,6 +122,7 @@ def initialize_simulation(reaction_network, initial_cond, volume=10**-24):
 
 
 @jit(nopython=True, parallel=True)
+# @jit(nopython=True, parallel=True)
 def kmc_simulate(time_steps, coord_array, rate_constants, propensity_array,
                  species_rxn_mapping, reactants, products, state):
     """
@@ -152,6 +153,7 @@ def kmc_simulate(time_steps, coord_array, rate_constants, propensity_array,
         r1 = random.random()
         r2 = random.random()
         tau = -np.log(r1) / total_propensity
+        t += tau
         random_propensity = r2 * total_propensity
         abrgd_reaction_choice_ind = np.where(np.cumsum(propensity_array[relevant_ind]) >= random_propensity)[0][0]
         reaction_choice_ind = relevant_ind[abrgd_reaction_choice_ind]
@@ -188,7 +190,7 @@ def kmc_simulate(time_steps, coord_array, rate_constants, propensity_array,
         propensity_array = np.multiply(rate_constants, coord_array)
         relevant_ind = np.where(propensity_array > 0)[0]
         total_propensity = np.sum(propensity_array[relevant_ind])
-        reaction_history[step_counter] = int(reaction_choice_ind)
+        reaction_history[step_counter] = reaction_choice_ind
         times[step_counter] = tau
 
     return np.vstack((np.array(reaction_history), np.array(times)))
@@ -307,8 +309,8 @@ class KmcDataAnalyzer:
         self.initial_state_dict = initial_state_dict
         self.products = products
         self.reactants = reactants
-        self.reaction_history = reaction_history
-        self.time_history = time_history
+        self.reaction_history = np.array(reaction_history, dtype=int)
+        self.time_history = np.array(time_history, dtype=float)
         self.num_sims = len(self.reaction_history)
         if self.num_sims != len(self.time_history):
             raise RuntimeError('Number of datasets for rxn history and time step history should be same!')
@@ -475,10 +477,10 @@ class KmcDataAnalyzer:
                       ncol=2, fontsize="small")
 
             sim_filename = filename + '_run_' + str(n_sim+1)
-            if file_dir is None:
+            if filename is None:
                 plt.show()
             else:
-                plt.savefig(file_dir + '/' + sim_filename)
+                plt.savefig(sim_filename)
 
     def analyze_intermediates(self, species_profiles, cutoff=0.9):
         """
@@ -576,6 +578,7 @@ class KmcDataAnalyzer:
                 step_elapse = list()
                 occurrences = 0
                 for (rxn_ind_j, location_list_j) in rxn_locations.items():
+                    # Examination of rxn_ind leading to rxn_ind_j
                     if rxn_ind == rxn_ind_j:
                         continue
                     for i in range(1, len(location_list)):
