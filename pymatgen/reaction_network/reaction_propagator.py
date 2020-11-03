@@ -122,7 +122,6 @@ def initialize_simulation(reaction_network, initial_cond, volume=10**-24):
 
 
 @jit(nopython=True, parallel=True)
-# @jit(nopython=True, parallel=True)
 def kmc_simulate(time_steps, coord_array, rate_constants, propensity_array,
                  species_rxn_mapping, reactants, products, state):
     """
@@ -150,6 +149,7 @@ def kmc_simulate(time_steps, coord_array, rate_constants, propensity_array,
     times = [0.0 for step in range(time_steps)]
     relevant_ind = np.where(propensity_array > 0)[0]  # Take advantage of sparsity - many propensities will be 0.
     for step_counter in range(time_steps):
+        # print('time: {:e}, propensity: {:e}, step: {}'.format(t, total_propensity, step_counter))
         r1 = random.random()
         r2 = random.random()
         tau = -np.log(r1) / total_propensity
@@ -187,11 +187,18 @@ def kmc_simulate(time_steps, coord_array, rate_constants, propensity_array,
             this_h = get_coordination(reactants, products, state, math.floor(rxn_ind/2), this_reverse)
             coord_array[rxn_ind] = this_h
 
+        if reaction_choice_ind == 75:
+            print('step: {}, prop: {}, tot_prop: {}, rand_prop: {}, prop_74: {}, non_zero props: {}'.format(step_counter, propensity_array[reaction_choice_ind],
+                                                                              total_propensity, random_propensity,
+                                                                              propensity_array[74], relevant_ind))
         propensity_array = np.multiply(rate_constants, coord_array)
         relevant_ind = np.where(propensity_array > 0)[0]
         total_propensity = np.sum(propensity_array[relevant_ind])
         reaction_history[step_counter] = reaction_choice_ind
         times[step_counter] = tau
+
+
+
 
     return np.vstack((np.array(reaction_history), np.array(times)))
 
