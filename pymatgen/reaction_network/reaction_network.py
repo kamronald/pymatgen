@@ -29,6 +29,7 @@ from pymatgen.reaction_network.reaction import (
     softplus,
     rexp,
     exponent,
+    MetalHopReaction
 )
 
 
