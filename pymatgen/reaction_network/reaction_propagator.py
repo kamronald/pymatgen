@@ -477,6 +477,7 @@ class KmcDataAnalyzer:
                     ax.plot(ts, nums)
 
             title = "KMC simulation, total time {}".format(t_end)
+<<<<<<< Updated upstream
             ax.set(title=title,
                    xlabel="Time (s)",
                    ylabel="# Molecules")
@@ -484,6 +485,12 @@ class KmcDataAnalyzer:
                       ncol=2, fontsize="small")
 
             sim_filename = filename + '_run_' + str(n_sim+1)
+=======
+            ax.set(title=title, xlabel="Time (s)", ylabel="# Molecules")
+            ax.legend(loc="upper right", bbox_to_anchor=(1, 1), ncol=2, fontsize="small")
+
+            sim_filename = filename + "_run_{}.png".format(n_sim+1)
+>>>>>>> Stashed changes
             if filename is None:
                 plt.show()
             else:

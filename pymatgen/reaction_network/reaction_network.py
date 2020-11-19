@@ -22,6 +22,29 @@ from pymatgen.reaction_network.reaction_rates import (ReactionRateCalculator,
                                                       RedoxRateCalculator)
 from pymatgen.util.classes import load_class
 
+<<<<<<< Updated upstream
+=======
+# TODO (mjwen) remove imports that is not used in this file
+# Import everything used to be in this file but moved to reaction.py in case somebody
+# imports it directly from this file. (The pickled files in the unit test uses them).
+from pymatgen.reaction_network.reaction import (
+    Reaction,
+    RedoxReaction,
+    IntramolSingleBondChangeReaction,
+    IntermolecularReaction,
+    CoordinationBondChangeReaction,
+    ConcertedReaction,
+    graph_rep_1_1,
+    graph_rep_1_2,
+    graph_rep_2_2,
+    graph_rep_3_2,
+    softplus,
+    rexp,
+    exponent,
+    MetalHopReaction,
+)
+
+>>>>>>> Stashed changes
 
 __author__ = "Sam Blau, Hetal Patel, Xiaowei Xie, Evan Spotte-Smith"
 __version__ = "0.1"
@@ -2336,6 +2359,7 @@ class ReactionNetwork(MSONable):
         :return: float
         """
 
+<<<<<<< Updated upstream
         if free_energy <= 0:
             d = np.array([[free_energy]], dtype=np.float128)
             r = np.exp(d)
@@ -2347,6 +2371,20 @@ class ReactionNetwork(MSONable):
     def build(self, reaction_types=frozenset({"RedoxReaction", "IntramolSingleBondChangeReaction",
                                               "IntermolecularReaction", "MetalHopReaction",
                                               "CoordinationBondChangeReaction"})) -> nx.DiGraph:
+=======
+    def build(
+        self,
+        reaction_types=frozenset(
+            {
+                "RedoxReaction",
+                "IntramolSingleBondChangeReaction",
+                "IntermolecularReaction",
+                "CoordinationBondChangeReaction",
+                "MetalHopReaction"
+            }
+        ),
+    ) -> nx.DiGraph:
+>>>>>>> Stashed changes
         """
             A method to build the reaction network graph
 
