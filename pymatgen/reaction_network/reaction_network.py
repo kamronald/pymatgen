@@ -692,6 +692,7 @@ class ReactionNetwork(MSONable):
                 "IntramolSingleBondChangeReaction",
                 "IntermolecularReaction",
                 "CoordinationBondChangeReaction",
+                # "MetalHopReaction"
             }
         ),
     ) -> nx.DiGraph:

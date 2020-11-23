@@ -27,7 +27,7 @@ The algorithm is described by Gillespie (1976).
 """
 
 
-def initialize_simulation(reaction_network, initial_cond, volume=10 ** -24):
+def initialize_simulation(reaction_network, initial_cond, temperature=298.15, volume=10 ** -24):
     """
     Initial loop through reactions to create lists, mappings, and initial states needed for simulation without
     reaction network objects.
@@ -75,8 +75,8 @@ def initialize_simulation(reaction_network, initial_cond, volume=10 ** -24):
         # Keep track of reactant amounts, for later calculating coordination number
         num_reactants_for = list()
         num_reactants_rev = list()
-        rate_constants[2 * id] = reaction.rate_constant()["k_A"]
-        rate_constants[2 * id + 1] = reaction.rate_constant()["k_B"]
+        rate_constants[2 * id] = reaction.rate_constant(temperature=temperature)["k_A"]
+        rate_constants[2 * id + 1] = reaction.rate_constant(temperature=temperature)["k_B"]
         for idx, react in enumerate(reaction.reactants):
             # for each reactant, need to find the corresponding mol_id with the index
             mol_ind = molid_index_mapping[react.entry_id]
@@ -524,11 +524,11 @@ class KmcDataAnalyzer:
             ax.set(title=title, xlabel="Time (s)", ylabel="# Molecules")
             ax.legend(loc="upper right", bbox_to_anchor=(1, 1), ncol=2, fontsize="small")
 
-            sim_filename = filename + "_run_" + str(n_sim + 1)
-            if file_dir is None:
+            sim_filename = filename + "_run_{}.png".format(n_sim + 1)
+            if filename is None:
                 plt.show()
             else:
-                plt.savefig(file_dir + "/" + sim_filename)
+                plt.savefig(sim_filename)
 
     def analyze_intermediates(self, species_profiles, cutoff=0.9):
         """
