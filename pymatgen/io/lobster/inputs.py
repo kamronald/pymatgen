@@ -13,7 +13,7 @@ from __future__ import annotations
 import itertools
 import os
 import warnings
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import spglib
@@ -28,6 +28,8 @@ from pymatgen.symmetry.bandstructure import HighSymmKpath
 from pymatgen.util.due import Doi, due
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pymatgen.core.composition import Composition
 
 
@@ -283,20 +285,21 @@ class Lobsterin(dict, MSONable):
 
     def as_dict(self):
         """MSONable dict"""
-        d = dict(self)
-        d["@module"] = type(self).__module__
-        d["@class"] = type(self).__name__
-        return d
+        dct = dict(self)
+        dct["@module"] = type(self).__module__
+        dct["@class"] = type(self).__name__
+        return dct
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, dct):
         """
-        :param d: Dict representation
+        Args:
+            dct (dict): Dict representation.
 
         Returns:
             Lobsterin
         """
-        return Lobsterin({k: v for k, v in d.items() if k not in ["@module", "@class"]})
+        return Lobsterin({k: v for k, v in dct.items() if k not in ["@module", "@class"]})
 
     def write_INCAR(
         self,
@@ -366,14 +369,14 @@ class Lobsterin(dict, MSONable):
 
         basis_functions = []
         list_forin = []
-        for idx, type in enumerate(Potcar_names):
-            if type not in BASIS:
+        for idx, basis in enumerate(Potcar_names):
+            if basis not in BASIS:
                 raise ValueError(
-                    f"You have to provide the basis for {type} manually. We don't have any information on this POTCAR."
+                    f"You have to provide the basis for {basis} manually. We don't have any information on this POTCAR."
                 )
-            basis_functions.append(BASIS[type].split())
+            basis_functions.append(BASIS[basis].split())
             to_join = str(AtomTypes_Potcar[idx]) + " "
-            to_join2 = "".join(str(str(e) + " ") for e in BASIS[type].split())
+            to_join2 = "".join(str(str(e) + " ") for e in BASIS[basis].split())
             list_forin.append(str(to_join + to_join2))
         return list_forin
 
@@ -391,8 +394,9 @@ class Lobsterin(dict, MSONable):
             address_basis_file_min: path to file with the minimum required basis by the POTCAR
             address_basis_file_max: path to file with the largest possible basis of the POTCAR.
 
-        Returns: List of dictionaries that can be used to create new Lobsterin objects in
-        standard_calculations_from_vasp_files as dict_for_basis
+        Returns:
+            list[dict]: Can be used to create new Lobsterin objects in
+                standard_calculations_from_vasp_files as dict_for_basis
         """
         max_basis = Lobsterin.get_basis(
             structure=structure,
@@ -828,7 +832,8 @@ def get_all_possible_basis_combinations(min_basis: list, max_basis: list) -> lis
         min_basis: list of basis entries: e.g., ['Si 3p 3s ']
         max_basis: list of basis entries: e.g., ['Si 3p 3s '].
 
-    Returns: all possible combinations of basis functions, e.g. [['Si 3p 3s']]
+    Returns:
+        list[list[str]]: all possible combinations of basis functions, e.g. [['Si 3p 3s']]
     """
     max_basis_lists = [x.split() for x in max_basis]
     min_basis_lists = [x.split() for x in min_basis]

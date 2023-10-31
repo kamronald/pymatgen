@@ -55,8 +55,8 @@ class Cssr:
         with zopen(filename, "wt") as f:
             f.write(str(self) + "\n")
 
-    @staticmethod
-    def from_str(string):
+    @classmethod
+    def from_str(cls, string):
         """
         Reads a string representation to a Cssr object.
 
@@ -67,10 +67,10 @@ class Cssr:
             Cssr object.
         """
         lines = string.split("\n")
-        toks = lines[0].split()
-        lengths = [float(tok) for tok in toks]
-        toks = lines[1].split()
-        angles = [float(tok) for tok in toks[0:3]]
+        tokens = lines[0].split()
+        lengths = [float(tok) for tok in tokens]
+        tokens = lines[1].split()
+        angles = [float(tok) for tok in tokens[0:3]]
         latt = Lattice.from_parameters(*lengths, *angles)
         sp = []
         coords = []
@@ -79,10 +79,10 @@ class Cssr:
             if m:
                 sp.append(m.group(1))
                 coords.append([float(m.group(i)) for i in range(2, 5)])
-        return Cssr(Structure(latt, sp, coords))
+        return cls(Structure(latt, sp, coords))
 
-    @staticmethod
-    def from_file(filename):
+    @classmethod
+    def from_file(cls, filename):
         """
         Reads a CSSR file to a Cssr object.
 
@@ -93,4 +93,4 @@ class Cssr:
             Cssr object.
         """
         with zopen(filename, "rt") as f:
-            return Cssr.from_str(f.read())
+            return cls.from_str(f.read())

@@ -4,7 +4,7 @@ import gzip
 import json
 import os
 import unittest
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 from shutil import copyfile, copyfileobj
 
@@ -47,8 +47,6 @@ except ImportError:
 
 
 class TestVasprun(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def test_vasprun_ml(self):
         vasp_run = Vasprun(f"{TEST_FILES_DIR}/vasprun.xml.ml_md")
         assert len(vasp_run.md_data) == 100
@@ -90,7 +88,7 @@ class TestVasprun(PymatgenTest):
             Vasprun(f"{TEST_FILES_DIR}/vasprun.xml.dielectric_bad")
 
     def test_bad_vasprun(self):
-        with pytest.raises(ET.ParseError):
+        with pytest.raises(ElementTree.ParseError):
             Vasprun(f"{TEST_FILES_DIR}/bad_vasprun.xml")
 
         with pytest.warns(
@@ -432,7 +430,7 @@ class TestVasprun(PymatgenTest):
             ],
         )
 
-    def test_Xe(self):
+    def test_xe(self):
         vr = Vasprun(f"{TEST_FILES_DIR}/vasprun.xml.xe", parse_potcar_file=False)
         assert vr.atomic_symbols == ["Xe"]
 
@@ -707,8 +705,6 @@ class TestVasprun(PymatgenTest):
 
 
 class TestOutcar(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def test_init(self):
         for f in ["OUTCAR", "OUTCAR.gz"]:
             filepath = TEST_FILES_DIR / f
@@ -1168,128 +1164,24 @@ class TestOutcar(PymatgenTest):
 
     def test_mag_electrostatic_error(self):
         outcar = Outcar(f"{TEST_FILES_DIR}/OUTCAR.electrostaticerror.gz")
+        # fmt: off
         assert outcar.electrostatic_potential == [
-            -21.1667,
-            -19.6865,
-            -22.3983,
-            -22.3307,
-            -20.5213,
-            -20.9292,
-            -21.5063,
-            -21.3554,
-            -21.74,
-            -21.7018,
-            -20.3422,
-            -20.6128,
-            -21.4405,
-            -21.0022,
-            -21.975,
-            -21.915,
-            -21.0156,
-            -21.9027,
-            -22.3712,
-            -21.5816,
-            -21.8535,
-            -20.5061,
-            -22.2474,
-            -22.1904,
-            -22.2203,
-            -20.1727,
-            -21.1068,
-            -20.1669,
-            -22.1272,
-            -21.3446,
-            -82.4717,
-            -83.035,
-            -81.8289,
-            -82.5957,
-            -81.7813,
-            -82.5011,
-            -82.6098,
-            -82.2885,
-            -81.606,
-            -99.1621,
-            -99.3146,
-            -99.1742,
-            -99.4728,
-            -100.2139,
-            -99.852,
-            -99.3575,
-            -99.4135,
-            -98.9092,
-            -99.8867,
-            -99.3707,
-            -99.0794,
-            -98.8376,
-            -99.3656,
-            -98.6474,
-            -99.3264,
-            -98.844,
-            -99.074,
-            -98.9354,
-            -99.1643,
-            -99.2412,
-            -68.7667,
-            -68.2528,
-            -66.7326,
-            -67.7113,
-            -69.2228,
-            -67.014,
-            -69.1456,
-            -67.3151,
-            -68.2625,
-            -67.6156,
-            -69.8112,
-            -68.9266,
-            -67.8286,
-            -69.3289,
-            -68.7017,
-            -67.2834,
-            -68.4665,
-            -68.0188,
-            -67.7083,
-            -69.7195,
-            -67.4078,
-            -67.9646,
-            -68.584,
-            -69.2387,
-            -69.7822,
-            -67.0701,
-            -67.8236,
-            -68.2468,
-            -68.6533,
-            -68.3218,
-            -67.5923,
-            -69.1266,
-            -68.4615,
-            -68.302,
-            -67.999,
-            -68.6709,
-            -68.9973,
-            -67.4147,
-            -68.4463,
-            -68.0899,
-            -67.665,
-            -69.6705,
-            -68.6433,
-            -68.4288,
-            -66.9027,
-            -67.3211,
-            -68.604,
-            -69.1299,
-            -67.5565,
-            -69.0845,
-            -67.4289,
-            -66.6864,
-            -67.6484,
-            -67.9783,
-            -67.7661,
-            -66.9797,
-            -67.8007,
-            -68.3194,
-            -69.3671,
-            -67.2708,
+            -21.1667, -19.6865, -22.3983, -22.3307, -20.5213, -20.9292, -21.5063, -21.3554, -21.74,
+            -21.7018, -20.3422, -20.6128, -21.4405, -21.0022, -21.975, -21.915, -21.0156, -21.9027,
+            -22.3712, -21.5816, -21.8535, -20.5061, -22.2474, -22.1904, -22.2203, -20.1727, -21.1068,
+            -20.1669, -22.1272, -21.3446, -82.4717, -83.035, -81.8289, -82.5957, -81.7813, -82.5011,
+            -82.6098, -82.2885, -81.606, -99.1621, -99.3146, -99.1742, -99.4728, -100.2139, -99.852,
+            -99.3575, -99.4135, -98.9092, -99.8867, -99.3707, -99.0794, -98.8376, -99.3656, -98.6474,
+            -99.3264, -98.844, -99.074, -98.9354, -99.1643, -99.2412, -68.7667, -68.2528, -66.7326,
+            -67.7113, -69.2228, -67.014, -69.1456, -67.3151, -68.2625, -67.6156, -69.8112, -68.9266,
+            -67.8286, -69.3289, -68.7017, -67.2834, -68.4665, -68.0188, -67.7083, -69.7195, -67.4078,
+            -67.9646, -68.584, -69.2387, -69.7822, -67.0701, -67.8236, -68.2468, -68.6533, -68.3218,
+            -67.5923, -69.1266, -68.4615, -68.302, -67.999, -68.6709, -68.9973, -67.4147, -68.4463,
+            -68.0899, -67.665, -69.6705, -68.6433, -68.4288, -66.9027, -67.3211, -68.604, -69.1299,
+            -67.5565, -69.0845, -67.4289, -66.6864, -67.6484, -67.9783, -67.7661, -66.9797, -67.8007,
+            -68.3194, -69.3671, -67.2708,
         ]
+        # fmt: on
 
     def test_onsite_density_matrix(self):
         outcar = Outcar(f"{TEST_FILES_DIR}/OUTCAR.LinearResponseU.gz")
@@ -1310,16 +1202,16 @@ class TestOutcar(PymatgenTest):
     def test_nplwvs(self):
         outcar = Outcar(f"{TEST_FILES_DIR}/OUTCAR")
         assert outcar.data["nplwv"] == [[34560]]
+        # fmt: off
         assert outcar.data["nplwvs_at_kpoints"] == [
-            # fmt: off
             1719, 1714, 1722, 1728, 1722, 1726, 1722, 1720, 1717, 1724, 1715, 1724, 1726,
             1724, 1728, 1715, 1722, 1715, 1726, 1730, 1730, 1715, 1716, 1729, 1727, 1723,
             1721, 1712, 1723, 1719, 1717, 1717, 1724, 1719, 1719, 1727, 1726, 1730, 1719,
             1720, 1718, 1717, 1722, 1719, 1709, 1714, 1724, 1726, 1718, 1713, 1720, 1713,
             1711, 1713, 1715, 1717, 1728, 1726, 1712, 1722, 1714, 1713, 1717, 1714, 1714,
             1717, 1712, 1710, 1721, 1722, 1724, 1720, 1726, 1719, 1722, 1714,
-            # fmt: on
         ]
+        # fmt: on
         outcar = Outcar(f"{TEST_FILES_DIR}/OUTCAR.CL")
         assert outcar.data["nplwv"] == [[None]]
         assert outcar.data["nplwvs_at_kpoints"] == [85687]
@@ -1393,8 +1285,6 @@ class TestOutcar(PymatgenTest):
 
 
 class TestBSVasprun(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def test_get_band_structure(self):
         filepath = f"{TEST_FILES_DIR}/vasprun_Si_bands.xml"
         vasprun = BSVasprun(filepath, parse_potcar_file=False)
@@ -1465,8 +1355,8 @@ class TestChgcar(PymatgenTest):
         assert chgcar.get_integrated_diff(0, 1)[0, 1] == approx(0)
 
         ans = [1.56472768, 3.25985108, 3.49205728, 3.66275028, 3.8045896, 5.10813352]
-        myans = self.chgcar_fe3o4.get_integrated_diff(0, 3, 6)
-        assert_allclose(myans[:, 1], ans)
+        actual = self.chgcar_fe3o4.get_integrated_diff(0, 3, 6)
+        assert_allclose(actual[:, 1], ans)
 
     def test_write(self):
         self.chgcar_spin.write_file("CHGCAR_pmg")
@@ -1558,6 +1448,22 @@ class TestChgcar(PymatgenTest):
         )
 
 
+class TestAeccars(PymatgenTest):
+    # https://github.com/materialsproject/pymatgen/pull/3343
+    def test_read_write_file(self):
+        aeccar0_test = Chgcar.from_file(f"{TEST_FILES_DIR}/bader/AECCAR0.gz")
+        aeccar0_outpath = f"{self.tmp_path}/AECCAR0_test"
+        aeccar0_test.write_file(aeccar0_outpath)
+        aeccar0_read = Chgcar.from_file(aeccar0_outpath)
+        assert_allclose(aeccar0_test.data["total"], aeccar0_read.data["total"])
+
+        aeccar2 = Chgcar.from_file(f"{TEST_FILES_DIR}/bader/AECCAR2.gz")
+        aeccar2_outpath = f"{self.tmp_path}/AECCAR2_test"
+        aeccar2.write_file(aeccar2_outpath)
+        aeccar2_read = Chgcar.from_file(aeccar2_outpath)
+        assert_allclose(aeccar2.data["total"], aeccar2_read.data["total"])
+
+
 class TestElfcar(PymatgenTest):
     def test_init(self):
         elfcar = Elfcar.from_file(f"{TEST_FILES_DIR}/ELFCAR.gz")
@@ -1579,8 +1485,6 @@ class TestElfcar(PymatgenTest):
 
 
 class TestProcar(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def test_init(self):
         filepath = f"{TEST_FILES_DIR}/PROCAR.simple"
         p = Procar(filepath)
@@ -1672,8 +1576,6 @@ class TestDynmat(PymatgenTest):
 
 
 class TestWavecar(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def setUp(self):
         a = np.array([[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]])
         self.vol = np.dot(a[0, :], np.cross(a[1, :], a[2, :]))
@@ -1779,11 +1681,11 @@ class TestWavecar(PymatgenTest):
         finally:
             Wavecar._generate_G_points = temp_ggp
 
-    def test__generate_nbmax(self):
+    def test_generate_nbmax(self):
         self.w._generate_nbmax()
         assert self.w._nbmax.tolist() == [5, 5, 5]
 
-    def test__generate_G_points(self):
+    def test_generate_g_points(self):
         for k in range(self.w.nk):
             kp = self.w.kpoints[k]
             assert len(self.w._generate_G_points(kp)) <= 257
@@ -1946,8 +1848,6 @@ class TestWavecar(PymatgenTest):
 
 
 class TestEigenval(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def test_init(self):
         eig = Eigenval(f"{TEST_FILES_DIR}/EIGENVAL.gz")
         assert eig.ispin == 1
@@ -1988,8 +1888,6 @@ class TestEigenval(PymatgenTest):
 
 
 class TestWaveder(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def setUp(self):
         wder = Waveder.from_binary(f"{TEST_FILES_DIR}/WAVEDER", "float64")
         assert wder.nbands == 36
@@ -2028,8 +1926,6 @@ class TestWaveder(PymatgenTest):
 
 
 class TestWSWQ(PymatgenTest):
-    _multiprocess_shared_ = True
-
     def setUp(self):
         self.wswq = WSWQ.from_file(f"{TEST_FILES_DIR}/WSWQ.gz")
 

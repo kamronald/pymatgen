@@ -9,7 +9,7 @@ from fractions import Fraction
 from itertools import groupby, product
 from math import gcd
 from string import ascii_lowercase
-from typing import Callable, Iterable
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 from monty.dev import requires
@@ -38,6 +38,9 @@ from pymatgen.transformations.standard_transformations import (
     SupercellTransformation,
 )
 from pymatgen.transformations.transformation_abc import AbstractTransformation
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 try:
     import hiphive
@@ -160,10 +163,9 @@ class MultipleSubstitutionTransformation:
     only one ordering must be done per substitution oxidation state. Charge
     balancing of the structure is optionally performed.
 
-    .. note::
-        There are no checks to make sure that removal fractions are possible
-        and rounding may occur. Currently charge balancing only works for
-        removal of species.
+    Note:
+        There are no checks to make sure that removal fractions are possible and rounding
+        may occur. Currently charge balancing only works for removal of species.
     """
 
     def __init__(
@@ -344,7 +346,6 @@ class EnumerateStructureTransformation(AbstractTransformation):
 
                 is returned. If False, only the single lowest energy structure is returned. Defaults to False.
 
-
         Returns:
             Depending on returned_ranked list, either a transformed structure
             or a list of dictionaries, where each dictionary is of the form
@@ -375,12 +376,12 @@ class EnumerateStructureTransformation(AbstractTransformation):
             structures = [structure.copy()]
 
         if self.max_disordered_sites:
-            ndisordered = sum(1 for site in structure if not site.is_ordered)
-            if ndisordered > self.max_disordered_sites:
-                raise ValueError(f"Too many disordered sites! ({ndisordered} > {self.max_disordered_sites})")
+            n_disordered = sum(1 for site in structure if not site.is_ordered)
+            if n_disordered > self.max_disordered_sites:
+                raise ValueError(f"Too many disordered sites! ({n_disordered} > {self.max_disordered_sites})")
             max_cell_sizes: Iterable[int] = range(
                 self.min_cell_size,
-                int(math.floor(self.max_disordered_sites / ndisordered)) + 1,
+                int(math.floor(self.max_disordered_sites / n_disordered)) + 1,
             )
         else:
             max_cell_sizes = [self.max_cell_size]
@@ -635,7 +636,7 @@ class MagOrderingTransformation(AbstractTransformation):
             global order parameter and can take values from 0.0 to 1.0
             (e.g. 0.5 for antiferromagnetic or 1.0 for ferromagnetic), if
             list has to be a list of
-            :class:`pymatgen.transformations.advanced_transformations.MagOrderParameterConstraint`
+            pymatgen.transformations.advanced_transformations.MagOrderParameterConstraint
             to specify more complicated orderings, see documentation for
             MagOrderParameterConstraint more details on usage
         :param energy_model: Energy model to rank the returned structures,
@@ -644,7 +645,7 @@ class MagOrderingTransformation(AbstractTransformation):
             structures use SymmetryModel() which ranks structures from most
             symmetric to least.
         :param kwargs: Additional kwargs that are passed to
-        :class:`EnumerateStructureTransformation` such as min_cell_size etc.
+        EnumerateStructureTransformation such as min_cell_size etc.
         """
         # checking for sensible order_parameter values
         if isinstance(order_parameter, float):
@@ -880,7 +881,7 @@ class MagOrderingTransformation(AbstractTransformation):
             alls = self._remove_dummy_species(alls)
             alls = self._add_spin_magnitudes(alls)
         else:
-            for idx, _ in enumerate(alls):
+            for idx in range(len(alls)):
                 alls[idx]["structure"] = self._remove_dummy_species(alls[idx]["structure"])
                 alls[idx]["structure"] = self._add_spin_magnitudes(alls[idx]["structure"])
 
@@ -992,7 +993,7 @@ class DopingTransformation(AbstractTransformation):
                 doping sites. This is an inclusionary list. If specified,
                 any sites which are not
             **kwargs:
-                Same keyword args as :class:`EnumerateStructureTransformation`,
+                Same keyword args as EnumerateStructureTransformation,
                 i.e., min_cell_size, etc.
         """
         self.dopant = get_el_sp(dopant)
@@ -1011,7 +1012,6 @@ class DopingTransformation(AbstractTransformation):
             return_ranked_list (bool | int, optional): If return_ranked_list is int, that number of structures.
 
                 is returned. If False, only the single lowest energy structure is returned. Defaults to False.
-
 
         Returns:
             [{"structure": Structure, "energy": float}]
@@ -1070,9 +1070,7 @@ class DopingTransformation(AbstractTransformation):
                 logger.info(f"Doping {sp} for {self.dopant} at level {1 / nsp:.3f}")
             elif self.codopant:
                 codopant = _find_codopant(sp, 2 * sp.oxi_state - ox)  # type: ignore
-                supercell.replace_species(
-                    {sp: {sp: (nsp - 2) / nsp, self.dopant: 1 / nsp, codopant: 1 / nsp}}
-                )  # type: ignore
+                supercell.replace_species({sp: {sp: (nsp - 2) / nsp, self.dopant: 1 / nsp, codopant: 1 / nsp}})  # type: ignore
                 logger.info(f"Doping {sp} for {self.dopant} + {codopant} at level {1 / nsp:.3f}")
             elif abs(sp.oxi_state) < abs(ox):  # type: ignore
                 # Strategy: replace the target species with a
@@ -1319,8 +1317,7 @@ class DisorderOrderedTransformation(AbstractTransformation):
 
         def _sort_partitions(partitions_to_sort):
             """Sort partitions by those we want to check first
-            (typically, merging two sites into one is the
-            one to try first).
+            (typically, merging two sites into one is the one to try first).
             """
             partition_indices = [(idx, [len(p) for p in partition]) for idx, partition in enumerate(partitions_to_sort)]
 
@@ -1432,7 +1429,7 @@ class GrainBoundaryTransformation(AbstractTransformation):
                 find the smallest cell.
 
         Returns:
-           Grain boundary structure (gb (Structure) object).
+            Grain boundary structure (gb (Structure) object).
         """
         self.rotation_axis = rotation_axis
         self.rotation_angle = rotation_angle
@@ -1453,7 +1450,6 @@ class GrainBoundaryTransformation(AbstractTransformation):
         Args:
             structure: Input Structure
             return_ranked_list (bool | int, optional): If return_ranked_list is int, that number of structures
-
                 is returned. If False, only the single lowest energy structure is returned. Defaults to False.
 
         Returns:
@@ -1552,7 +1548,7 @@ class CubicSupercellTransformation(AbstractTransformation):
 
         if self.force_diagonal:
             scale = self.min_length / np.array(structure.lattice.abc)
-            self.transformation_matrix = np.diag(np.ceil(scale).astype(int))  # type: ignore
+            self.transformation_matrix = np.diag(np.ceil(scale).astype(int))  # type: ignore[assignment]
             st = SupercellTransformation(self.transformation_matrix)
             return st.apply_transformation(structure)
 
@@ -1628,7 +1624,7 @@ class CubicSupercellTransformation(AbstractTransformation):
 
 
 class AddAdsorbateTransformation(AbstractTransformation):
-    """Create absorbate structures."""
+    """Create adsorbate structures."""
 
     def __init__(
         self,
@@ -1642,7 +1638,7 @@ class AddAdsorbateTransformation(AbstractTransformation):
         reorient=True,
         find_args=None,
     ):
-        """Use AdsorbateSiteFinder to add an absorbate to a slab.
+        """Use AdsorbateSiteFinder to add an adsorbate to a slab.
 
         Args:
             adsorbate (Molecule): molecule to add as adsorbate
@@ -1681,16 +1677,17 @@ class AddAdsorbateTransformation(AbstractTransformation):
 
                 is returned. If False, only the single lowest energy structure is returned. Defaults to False.
 
-        Returns: Slab with adsorbate
+        Returns:
+            Slab: with adsorbate
         """
-        sitefinder = AdsorbateSiteFinder(
+        site_finder = AdsorbateSiteFinder(
             structure,
             selective_dynamics=self.selective_dynamics,
             height=self.height,
             mi_vec=self.mi_vec,
         )
 
-        structures = sitefinder.generate_adsorption_structures(
+        structures = site_finder.generate_adsorption_structures(
             self.adsorbate,
             repeat=self.repeat,
             min_lw=self.min_lw,
@@ -1813,7 +1810,7 @@ class SubstituteSurfaceSiteTransformation(AbstractTransformation):
                 concurrent with the miller index, this enables use with
                 slabs that have been reoriented, but the miller vector
                 must be supplied manually
-            target_species:  List of specific species to substitute
+            target_species: List of specific species to substitute
             sub_both_sides (bool): If true, substitute an equivalent
                 site on the other surface
             range_tol (float): Find viable substitution sites at a specific
@@ -1838,16 +1835,17 @@ class SubstituteSurfaceSiteTransformation(AbstractTransformation):
 
                 is returned. If False, only the single lowest energy structure is returned. Defaults to False.
 
-        Returns: Slab with sites substituted
+        Returns:
+            list[dict]: each dict has key 'structure' which is a Slab with sites substituted
         """
-        sitefinder = AdsorbateSiteFinder(
+        site_finder = AdsorbateSiteFinder(
             structure,
             selective_dynamics=self.selective_dynamics,
             height=self.height,
             mi_vec=self.mi_vec,
         )
 
-        structures = sitefinder.generate_substitution_structures(
+        structures = site_finder.generate_substitution_structures(
             self.atom,
             target_species=self.target_species,
             sub_both_sides=self.sub_both_sides,
@@ -1939,7 +1937,8 @@ class SQSTransformation(AbstractTransformation):
 
     @staticmethod
     def _get_max_neighbor_distance(struct, shell):
-        """Calculate maximum nearest neighbor distance
+        """Calculate maximum nearest neighbor distance.
+
         Args:
             struct: pymatgen Structure object
             shell: nearest neighbor shell, such that shell=1 is the first nearest
@@ -1961,15 +1960,16 @@ class SQSTransformation(AbstractTransformation):
         return max(distances)
 
     @staticmethod
-    def _get_disordered_substructure(struc_disordered):
-        """Converts disordered structure into a substructure consisting of only disordered sites
+    def _get_disordered_substructure(struct_disordered):
+        """Converts disordered structure into a substructure consisting of only disordered sites.
+
         Args:
-            struc_disordered: pymatgen disordered Structure object.
+            struct_disordered: pymatgen disordered Structure object.
 
         Returns:
             pymatgen Structure object representing a substructure of disordered sites.
         """
-        disordered_substructure = struc_disordered.copy()
+        disordered_substructure = struct_disordered.copy()
 
         idx_to_remove = [idx for idx, site in enumerate(disordered_substructure) if site.is_ordered]
         disordered_substructure.remove_sites(idx_to_remove)
@@ -1977,10 +1977,11 @@ class SQSTransformation(AbstractTransformation):
         return disordered_substructure
 
     @staticmethod
-    def _sqs_cluster_estimate(struc_disordered, cluster_size_and_shell: dict[int, int] | None = None):
-        """Set up an ATAT cluster.out file for a given structure and set of constraints
+    def _sqs_cluster_estimate(struct_disordered, cluster_size_and_shell: dict[int, int] | None = None):
+        """Set up an ATAT cluster.out file for a given structure and set of constraints.
+
         Args:
-            struc_disordered: disordered pymatgen Structure object
+            struct_disordered: disordered pymatgen Structure object
             cluster_size_and_shell: dict of integers {cluster: shell}.
 
         Returns:
@@ -1988,7 +1989,7 @@ class SQSTransformation(AbstractTransformation):
         """
         cluster_size_and_shell = cluster_size_and_shell or {2: 3, 3: 2, 4: 1}
 
-        disordered_substructure = SQSTransformation._get_disordered_substructure(struc_disordered)
+        disordered_substructure = SQSTransformation._get_disordered_substructure(struct_disordered)
 
         clusters = {}
         for cluster_size, shell in cluster_size_and_shell.items():
@@ -2048,7 +2049,8 @@ class SQSTransformation(AbstractTransformation):
     @staticmethod
     def _get_unique_bestsqs_strucs(sqs, best_only, return_ranked_list, remove_duplicate_structures, reduction_algo):
         """Gets unique sqs structures with lowest objective function. Requires an mcsqs output that has been run
-            in parallel, otherwise returns Sqs.bestsqs
+            in parallel, otherwise returns Sqs.bestsqs.
+
         Args:
             sqs (Sqs): Sqs class object.
             best_only (bool): only return structures with lowest objective function.
@@ -2159,7 +2161,7 @@ class MonteCarloRattleTransformation(AbstractTransformation):
             # we store that the original seed was None
             seed = np.random.randint(1, 1000000000)
 
-        self.random_state = np.random.RandomState(seed)  # pylint: disable=E1101
+        self.random_state = np.random.RandomState(seed)
         self.kwargs = kwargs
 
     def apply_transformation(self, structure: Structure) -> Structure:

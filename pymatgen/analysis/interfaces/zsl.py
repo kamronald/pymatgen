@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import product
-from typing import Iterator
+from typing import TYPE_CHECKING
 
 import numpy as np
 from monty.json import MSONable
 
 from pymatgen.util.due import Doi, due
 from pymatgen.util.numba import njit
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 @dataclass
@@ -89,6 +92,7 @@ class ZSLGenerator(MSONable):
         """
         Initialize a Zur Super Lattice Generator for a specific film and
             substrate
+
         Args:
             max_area_ratio_tol(float): Max tolerance on ratio of
                 super-lattices to consider equal
@@ -110,6 +114,7 @@ class ZSLGenerator(MSONable):
         area of the unit cell area for the film and substrate. The
         transformation sets map the film and substrate unit cells to super
         lattices with a maximum area
+
         Args:
             film_area(int): the unit cell area for the film
             substrate_area(int): the unit cell area for the substrate

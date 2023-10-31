@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.io import FortranEOFError, FortranFile
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __author__ = "Mark Turiansky"
 __copyright__ = "Copyright 2011, The Materials Project"
@@ -20,29 +23,15 @@ class Unk:
     """
     Object representing the data in a UNK file.
 
-    .. attribute:: ik
-
-        int index of kpoint for this file
-
-    .. attribute:: data
-
-        numpy.ndarray that contains the wavefunction data for in the UNK file.
-        The shape should be (nbnd, ngx, ngy, ngz) for regular calculations and
-        (nbnd, 2, ngx, ngy, ngz) for noncollinear calculations.
-
-    .. attribute:: is_noncollinear
-
-        bool that specifies if data is from a noncollinear calculation
-
-    .. attribute:: nbnd
-
-        int number of bands in data
-
-    .. attribute:: ng
-
-        sequence of three integers that correspond to the grid size of the
-        given data. The definition is ng = (ngx, ngy, ngz).
-
+    Attributes:
+        ik (int): Index of kpoint for this file.
+        data (numpy.ndarray): Numpy array that contains the wavefunction data for in the UNK file.
+            The shape should be (nbnd, ngx, ngy, ngz) for regular calculations and (nbnd, 2, ngx, ngy, ngz)
+            for noncollinear calculations.
+        is_noncollinear (bool): Boolean that specifies if data is from a noncollinear calculation.
+        nbnd (int): Number of bands in data.
+        ng (tuple): Sequence of three integers that correspond to the grid size of the given data.
+            The definition is ng = (ngx, ngy, ngz).
     """
 
     ik: int
@@ -77,7 +66,7 @@ class Unk:
         Sets the value of data.
 
         Args:
-            value (np.ndarray): data to replace stored data, must haveshape
+            value (np.ndarray): data to replace stored data, must have shape
                 (nbnd, ngx, ngy, ngz) or (nbnd, 2, ngx, ngy, ngz) if
                 noncollinear calculation
         """
@@ -99,8 +88,8 @@ class Unk:
         self.nbnd = self.data.shape[0]
         self.ng = self.data.shape[-3:]
 
-    @staticmethod
-    def from_file(filename: str) -> object:
+    @classmethod
+    def from_file(cls, filename: str) -> object:
         """
         Reads the UNK data from file.
 
@@ -133,8 +122,8 @@ class Unk:
             temp_data = np.empty((nbnd, 2, *ng), dtype=np.complex128)
             temp_data[:, 0, :, :, :] = data[::2, :, :, :]
             temp_data[:, 1, :, :, :] = data[1::2, :, :, :]
-            return Unk(ik, temp_data)
-        return Unk(ik, data)
+            return cls(ik, temp_data)
+        return cls(ik, data)
 
     def write_file(self, filename: str) -> None:
         """

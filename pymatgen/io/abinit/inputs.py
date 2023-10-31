@@ -422,7 +422,7 @@ def ion_ioncell_relax_input(
     shift_mode="Monkhorst-pack",
 ):
     """
-    Returns a |BasicMultiDataset| for a structural relaxation. The first dataset optmizes the
+    Returns a |BasicMultiDataset| for a structural relaxation. The first dataset optimizes the
     atomic positions at fixed unit cell. The second datasets optimizes both ions and unit cell parameters.
 
     Args:
@@ -596,7 +596,7 @@ class AbstractInput(MutableMapping, metaclass=abc.ABCMeta):
         return self.vars.__getitem__(key)
 
     def __iter__(self):
-        return self.vars.__iter__()
+        return iter(self.vars)
 
     def __len__(self):
         return len(self.vars)
@@ -614,8 +614,7 @@ class AbstractInput(MutableMapping, metaclass=abc.ABCMeta):
     def write(self, filepath="run.abi"):
         """Write the input file to file to filepath."""
         dirname = os.path.dirname(os.path.abspath(filepath))
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+        os.makedirs(dirname, exist_ok=True)
 
         # Write the input file.
         with open(filepath, "w") as fh:
@@ -950,7 +949,7 @@ class BasicAbinitInput(AbstractInput, MSONable):
         Return dictionary with the variables that have been removed.
 
         Args:
-            spin_mode: :class:`SpinMode` object or string. Possible values for string are:
+            spin_mode: SpinMode object or string. Possible values for string are:
 
             - polarized
             - unpolarized
@@ -1139,7 +1138,7 @@ class BasicMultiDataset:
         return self._inputs[key]
 
     def __iter__(self):
-        return self._inputs.__iter__()
+        return iter(self._inputs)
 
     def __getattr__(self, name):
         _inputs = object.__getattribute__(self, "_inputs")
@@ -1260,9 +1259,7 @@ class BasicMultiDataset:
 
             w = 92
             if global_vars:
-                lines.append(w * "#")
-                lines.append("### Global Variables.")
-                lines.append(w * "#")
+                lines.extend((w * "#", "### Global Variables.", w * "#"))
                 for key in global_vars:
                     vname = key
                     lines.append(str(InputVariable(vname, self[0][key])))
@@ -1270,9 +1267,7 @@ class BasicMultiDataset:
             has_same_structures = self.has_same_structures
             if has_same_structures:
                 # Write structure here and disable structure output in input.to_str
-                lines.append(w * "#")
-                lines.append("#" + ("STRUCTURE").center(w - 1))
-                lines.append(w * "#")
+                lines.extend((w * "#", "#" + "STRUCTURE".center(w - 1), w * "#"))
                 for key, value in aobj.structure_to_abivars(self[0].structure).items():
                     vname = key
                     lines.append(str(InputVariable(vname, value)))

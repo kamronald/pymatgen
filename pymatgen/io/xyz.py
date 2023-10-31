@@ -14,7 +14,7 @@ from pymatgen.core import Molecule, Structure
 from pymatgen.core.structure import SiteCollection
 
 if TYPE_CHECKING:
-    from git import Sequence
+    from collections.abc import Sequence
 
 
 class XYZ:
@@ -44,12 +44,12 @@ class XYZ:
         Returns molecule associated with this XYZ. In case of multi-frame
         XYZ, returns the last frame.
         """
-        return self._mols[-1]
+        return self._mols[-1]  # type: ignore[return-value]
 
     @property
     def all_molecules(self) -> list[Molecule]:
         """Returns all the frames of molecule associated with this XYZ."""
-        return self._mols
+        return self._mols  # type: ignore[return-value]
 
     @staticmethod
     def _from_frame_string(contents) -> Molecule:
@@ -76,8 +76,8 @@ class XYZ:
     def from_string(cls, *args, **kwargs):
         return cls.from_str(*args, **kwargs)
 
-    @staticmethod
-    def from_str(contents) -> XYZ:
+    @classmethod
+    def from_str(cls, contents) -> XYZ:
         """
         Creates XYZ object from a string.
 
@@ -99,10 +99,10 @@ class XYZ:
         for xyz_match in pat.finditer(contents):
             xyz_text = xyz_match.group(0)
             mols.append(XYZ._from_frame_string(xyz_text))
-        return XYZ(mols)
+        return cls(mols)
 
-    @staticmethod
-    def from_file(filename) -> XYZ:
+    @classmethod
+    def from_file(cls, filename) -> XYZ:
         """
         Creates XYZ object from a file.
 
@@ -113,7 +113,7 @@ class XYZ:
             XYZ object
         """
         with zopen(filename, "rt") as f:
-            return XYZ.from_str(f.read())
+            return cls.from_str(f.read())
 
     def as_dataframe(self):
         """

@@ -8,6 +8,7 @@ from shutil import which
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
+from matplotlib import rc
 from numpy.testing import assert_allclose
 from pytest import approx
 
@@ -54,8 +55,6 @@ class TestDosPlotter(PymatgenTest):
     # it can actually execute.
     def test_get_plot(self):
         # Disabling latex is needed for this test to work.
-        from matplotlib import rc
-
         rc("text", usetex=False)
         self.plotter.add_dos_dict(self.dos.get_element_dos(), key_sort_func=lambda x: x.X)
         ax = self.plotter.get_plot()
@@ -433,11 +432,11 @@ class TestBoltztrapPlotter(unittest.TestCase):
 class TestCohpPlotter(PymatgenTest):
     def setUp(self):
         path = f"{TEST_FILES_DIR}/cohp/complete_cohp_lobster.json"
-        with open(os.path.join(path)) as f:
-            self.cohp = CompleteCohp.from_dict(json.load(f))
+        with open(path) as file:
+            self.cohp = CompleteCohp.from_dict(json.load(file))
         path = f"{TEST_FILES_DIR}/cohp/complete_coop_lobster.json"
-        with open(os.path.join(path)) as f:
-            self.coop = CompleteCohp.from_dict(json.load(f))
+        with open(path) as file:
+            self.coop = CompleteCohp.from_dict(json.load(file))
         self.cohp_plot = CohpPlotter(zero_at_efermi=False)
         self.coop_plot = CohpPlotter(are_coops=True)
 

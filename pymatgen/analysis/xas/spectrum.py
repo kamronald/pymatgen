@@ -33,27 +33,16 @@ class XAS(Spectrum):
         edge (str): Absorption edge associated with the spectrum
         spectrum_type (str): 'XANES' or 'EXAFS'
         absorbing_index (None or int): If None, the spectrum is assumed to be a
-         site-weighted spectrum, which is comparable to experimental one.
-         Otherwise, it indicates that the absorbing_index for a site-wise spectrum.
+            site-weighted spectrum, which is comparable to experimental one.
+            Otherwise, it indicates that the absorbing_index for a site-wise spectrum.
 
-
-    .. attribute: x
-        The sequence of energies
-
-    .. attribute: y
-        The sequence of mu(E)
-
-    .. attribute: absorbing_element
-        The absorbing_element of the spectrum
-
-    .. attribute: edge
-        The edge of the spectrum
-
-    .. attribute: spectrum_type
-        XANES or EXAFS spectrum
-
-    .. attribute: absorbing_index
-        The absorbing_index of the spectrum
+    Attributes:
+        x (Sequence[float]): The sequence of energies.
+        y (Sequence[float]): The sequence of mu(E).
+        absorbing_element (str): The absorbing element of the spectrum.
+        edge (str): The edge of the spectrum.
+        spectrum_type (str): The type of the spectrum (XANES or EXAFS).
+        absorbing_index (int): The absorbing index of the spectrum.
     """
 
     XLABEL = "Energy"
@@ -173,9 +162,7 @@ class XAS(Spectrum):
             f_final = interp1d(np.asarray(wavenumber), np.asarray(mu), bounds_error=False, fill_value=0)
             wavenumber_final = np.linspace(min(wavenumber), max(wavenumber), num=num_samples)
             mu_final = f_final(wavenumber_final)
-            energy_final = [
-                3.8537 * i**2 + xanes.e0 if i > 0 else -3.8537 * i**2 + xanes.e0 for i in wavenumber_final
-            ]
+            energy_final = [3.8537 * i**2 + xanes.e0 if i > 0 else -3.8537 * i**2 + xanes.e0 for i in wavenumber_final]
 
             return XAS(
                 energy_final,

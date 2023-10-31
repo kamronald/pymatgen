@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Generator
+from typing import TYPE_CHECKING
 
 import numpy as np
 from monty.io import reverse_readline
@@ -13,6 +13,9 @@ from monty.json import MSONable
 from monty.serialization import zopen
 
 from pymatgen.core.structure import Molecule
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 __author__ = "Xin Chen, chenxin13@mails.tsinghua.edu.cn"
 
@@ -39,25 +42,6 @@ def is_numeric(s) -> bool:
         return False
     else:
         return True
-
-
-def iterlines(s: str) -> Generator[str, None, None]:
-    r"""A generator form of s.split('\n') for reducing memory overhead.
-
-    Args:
-        s (str): A multi-line string.
-
-    Yields:
-        str: line
-    """
-    prevnl = -1
-    while True:
-        nextnl = s.find("\n", prevnl + 1)
-        if nextnl < 0:
-            yield s[(prevnl + 1) :]
-            break
-        yield s[(prevnl + 1) : nextnl]
-        prevnl = nextnl
 
 
 class AdfInputError(Exception):
@@ -320,7 +304,7 @@ class AdfKey(MSONable):
 
     def as_dict(self):
         """A JSON-serializable dict representation of self."""
-        d = {
+        dct = {
             "@module": type(self).__module__,
             "@class": type(self).__name__,
             "name": self.name,
@@ -330,8 +314,8 @@ class AdfKey(MSONable):
             subkeys = []
             for subkey in self.subkeys:
                 subkeys.append(subkey.as_dict())
-            d["subkeys"] = subkeys
-        return d
+            dct["subkeys"] = subkeys
+        return dct
 
     @classmethod
     def from_dict(cls, d):
@@ -359,8 +343,8 @@ class AdfKey(MSONable):
     def from_string(cls, *args, **kwargs):
         return cls.from_str(*args, **kwargs)
 
-    @staticmethod
-    def from_str(string):
+    @classmethod
+    def from_str(cls, string: str) -> AdfKey:
         """
         Construct an AdfKey object from the string.
 
@@ -392,17 +376,35 @@ class AdfKey(MSONable):
             el = string.split()
             if len(el) > 1:
                 options = [s.split("=") for s in el[1:]] if string.find("=") != -1 else el[1:]
-                for i, op in enumerate(options):
+                for idx, op in enumerate(options):  # type: ignore[var-annotated, arg-type]
                     if isinstance(op, list) and is_numeric(op[1]):
                         op[1] = float(op[1]) if is_float(op[1]) else int(op[1])
                     elif is_numeric(op):
-                        options[i] = float(op) if is_float(op) else int(op)
+                        options[idx] = float(op) if is_float(op) else int(op)  # type: ignore[index]
             else:
                 options = None
-            return AdfKey(el[0], options)
+            return cls(el[0], options)
 
         if string.find("subend") != -1:
             raise ValueError("Nested subkeys are not supported!")
+
+        def iterlines(s: str) -> Generator[str, None, None]:
+            r"""A generator form of s.split('\n') for reducing memory overhead.
+
+            Args:
+                s (str): A multi-line string.
+
+            Yields:
+                str: line
+            """
+            prev_nl = -1
+            while True:
+                next_nl = s.find("\n", prev_nl + 1)
+                if next_nl < 0:
+                    yield s[(prev_nl + 1) :]
+                    break
+                yield s[(prev_nl + 1) : next_nl]
+                prev_nl = next_nl
 
         key = None
         for line in iterlines(string):
@@ -411,15 +413,15 @@ class AdfKey(MSONable):
             el = line.strip().split()
             if len(el) == 0:
                 continue
-            if el[0].upper() in AdfKey.block_keys:
+            if el[0].upper() in cls.block_keys:
                 if key is None:
-                    key = AdfKey.from_str(line)
+                    key = cls.from_str(line)
                 else:
                     return key
             elif el[0].upper() == "END":
-                return key
+                return key  # type: ignore[return-value]
             elif key is not None:
-                key.add_subkey(AdfKey.from_str(line))
+                key.add_subkey(cls.from_str(line))
 
         raise Exception("IncompleteKey: 'END' is missing!")
 

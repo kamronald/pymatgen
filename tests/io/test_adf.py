@@ -2,20 +2,16 @@ from __future__ import annotations
 
 import os
 
-import pytest
 from pytest import approx
 
 from pymatgen.core.structure import Molecule
 from pymatgen.io.adf import AdfInput, AdfKey, AdfOutput, AdfTask
-from pymatgen.util.testing import TEST_FILES_DIR
+from pymatgen.util.testing import TEST_FILES_DIR, PymatgenTest
 
 __author__ = "Xin Chen, chenxin13@mails.tsinghua.edu.cn"
 
 
-@pytest.fixture(autouse=True)
-def test_dir():
-    return TEST_FILES_DIR / "molecules"
-
+test_dir = TEST_FILES_DIR / "molecules"
 
 geometry_string = """GEOMETRY
 smooth conservepoints
@@ -42,14 +38,14 @@ H      -1.22338913        1.57085004        0.00000000
 END
 """
 
-h2oxyz = """3
+h2o_xyz = """3
 0.0
 O -0.90293455 0.66591421 0.0
 H  0.05706545 0.66591421 0.0
 H -1.22338913 1.57085004 0.0
 """
 
-rhb18xyz = """19
+rhb18_xyz = """19
 0.0
 Rh       -0.453396   -0.375115    0.000000
 B         0.168139    3.232791    0.000000
@@ -74,7 +70,7 @@ B         0.445855   -2.382027   -2.415013
 
 
 def readfile(file_object):
-    """
+    """`
     Return the content of the file as a string.
 
     Parameters
@@ -174,7 +170,7 @@ class TestAdfKey:
 
     def test_atom_block_key(self):
         block = AdfKey("atoms")
-        o = Molecule.from_str(h2oxyz, "xyz")
+        o = Molecule.from_str(h2o_xyz, "xyz")
         for site in o:
             block.add_subkey(AdfKey(str(site.specie), list(site.coords)))
         assert str(block) == atoms_string
@@ -253,26 +249,20 @@ rhb18 = {
 }
 
 
-class TestAdfInput:
-    def setup(self):
-        self.tempfile = "./adf.temp"
-
-    def test_main(self, test_dir):
-        o = Molecule.from_str(rhb18xyz, "xyz")
-        o.set_charge_and_spin(-1, 3)
+class TestAdfInput(PymatgenTest):
+    def test_main(self):
+        tmp_file = f"{self.tmp_path}/adf.temp"
+        mol = Molecule.from_str(rhb18_xyz, "xyz")
+        mol.set_charge_and_spin(-1, 3)
         task = AdfTask("optimize", **rhb18)
         inp = AdfInput(task)
-        inp.write_file(o, self.tempfile)
+        inp.write_file(mol, tmp_file)
         s = readfile(test_dir / "adf" / "RhB18_adf.inp")
-        assert readfile(self.tempfile) == s
-
-    def tearDown(self):
-        if os.path.isfile(self.tempfile):
-            os.remove(self.tempfile)
+        assert readfile(tmp_file) == s
 
 
 class TestAdfOutput:
-    def test_analytical_freq(self, test_dir):
+    def test_analytical_freq(self):
         filename = os.path.join(str(test_dir), "adf", "analytical_freq", "adf.out")
         o = AdfOutput(filename)
         assert o.final_energy == approx(-0.54340325)
@@ -285,7 +275,7 @@ class TestAdfOutput:
         assert o.normal_modes[0][7] == approx(-0.426)
         assert o.normal_modes[0][8] == approx(-0.562)
 
-    def test_numerical_freq(self, test_dir):
+    def test_numerical_freq(self):
         filename = os.path.join(str(test_dir), "adf", "numerical_freq", "adf.out")
         o = AdfOutput(filename)
         assert o.freq_type == "Numerical"
@@ -301,7 +291,7 @@ class TestAdfOutput:
         assert o.normal_modes[1][7] == approx(0.000)
         assert o.normal_modes[1][9] == approx(-0.536)
 
-    def test_single_point(self, test_dir):
+    def test_single_point(self):
         filename = os.path.join(str(test_dir), "adf", "sp", "adf.out")
         o = AdfOutput(filename)
         assert o.final_energy == approx(-0.74399276)

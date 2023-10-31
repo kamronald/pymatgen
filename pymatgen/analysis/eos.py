@@ -17,7 +17,7 @@ import numpy as np
 from scipy.optimize import leastsq, minimize
 
 from pymatgen.core.units import FloatWithUnit
-from pymatgen.util.plotting import add_fig_kwargs, get_ax_fig_plt, pretty_plot
+from pymatgen.util.plotting import add_fig_kwargs, get_ax_fig, pretty_plot
 
 if TYPE_CHECKING:
     from matplotlib import pyplot as plt
@@ -65,10 +65,10 @@ class EOSBase(metaclass=ABCMeta):
         b0 = 2 * a * v0
         b1 = 4  # b1 is usually a small number like 4
 
-        vmin, vmax = min(self.volumes), max(self.volumes)
+        vol_min, vol_max = min(self.volumes), max(self.volumes)
 
-        if not vmin < v0 and v0 < vmax:
-            raise EOSError("The minimum volume of a fitted parabola is not in the input volumes\n.")
+        if not vol_min < v0 and v0 < vol_max:
+            raise EOSError("The minimum volume of a fitted parabola is not in the input volumes.")
 
         return e0, b0, b1, v0
 
@@ -77,8 +77,7 @@ class EOSBase(metaclass=ABCMeta):
         Do the fitting. Does least square fitting. If you want to use custom
         fitting, must override this.
         """
-        # the objective function that will be minimized in the least square
-        # fitting
+        # the objective function that will be minimized in the least square fitting
         self._params = self._initial_guess()
         self.eos_params, ierr = leastsq(
             lambda pars, x, y: y - self._func(x, pars),
@@ -87,7 +86,7 @@ class EOSBase(metaclass=ABCMeta):
         )
         # e0, b0, b1, v0
         self._params = self.eos_params
-        if ierr not in [1, 2, 3, 4]:
+        if ierr not in (1, 2, 3, 4):
             raise EOSError("Optimal parameters not found")
 
     @abstractmethod
@@ -97,8 +96,8 @@ class EOSBase(metaclass=ABCMeta):
         that derive from this abstract class.
 
         Args:
-            volume (float/numpy.array)
-             params (list/tuple): values for the parameters other than the
+            volume (float | list[float])
+            params (list | tuple): values for the parameters other than the
                 volume used by the eos.
         """
 
@@ -108,17 +107,17 @@ class EOSBase(metaclass=ABCMeta):
         to the ones obtained from fitting.
 
         Args:
-             volume (list/numpy.array)
+            volume (float | list[float]): volumes in Ang^3
 
         Returns:
             numpy.array
         """
         return self._func(np.array(volume), self.eos_params)
 
-    def __call__(self, volume):
+    def __call__(self, volume: float) -> float:
         """
         Args:
-            volume (): Volume.
+            volume (float | list[float]): volume(s) in Ang^3
 
         Returns:
             Compute EOS with this volume.
@@ -208,7 +207,7 @@ class EOSBase(metaclass=ABCMeta):
 
         ax.plot(vfit, self.func(vfit), linestyle="dashed", color=color, label=label)
 
-        ax.grid(True)
+        ax.grid(visible=True)
         ax.set_xlabel("Volume $\\AA^3$")
         ax.set_ylabel("Energy (eV)")
         ax.legend(loc="best", shadow=True)
@@ -223,7 +222,7 @@ class EOSBase(metaclass=ABCMeta):
         Plot the equation of state on axis `ax`.
 
         Args:
-            ax: matplotlib :class:`Axes` or None if a new figure should be created.
+            ax: matplotlib Axes or None if a new figure should be created.
             fontsize: Legend fontsize.
             color (str): plot color.
             label (str): Plot label
@@ -232,8 +231,7 @@ class EOSBase(metaclass=ABCMeta):
         Returns:
             plt.Figure: matplotlib figure.
         """
-        # pylint: disable=E1307
-        ax, fig, plt = get_ax_fig_plt(ax=ax)
+        ax, fig = get_ax_fig(ax=ax)
 
         color = kwargs.get("color", "r")
         label = kwargs.get("label", f"{type(self).__name__} fit")
@@ -257,7 +255,7 @@ class EOSBase(metaclass=ABCMeta):
 
         ax.plot(vfit, self.func(vfit), linestyle="dashed", color=color, label=label)
 
-        ax.grid(True)
+        ax.grid(visible=True)
         ax.set_xlabel("Volume $\\AA^3$")
         ax.set_ylabel("Energy (eV)")
         ax.legend(loc="best", shadow=True)
@@ -349,7 +347,7 @@ class PolynomialEOS(EOSBase):
         Do polynomial fitting and set the parameters. Uses numpy polyfit.
 
         Args:
-             order (int): order of the fit polynomial
+            order (int): order of the fit polynomial
         """
         self.eos_params = np.polyfit(self.volumes, self.energies, order)
         self._set_params()

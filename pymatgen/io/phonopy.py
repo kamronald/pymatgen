@@ -429,8 +429,8 @@ def get_gruneisenparameter(gruneisen_path, structure=None, structure_path=None) 
         structure: pymatgen Structure object
         structure_path: path to structure in a file (e.g., POSCAR)
 
-    Returns: GruneisenParameter object
-
+    Returns:
+        GruneisenParameter
     """
     gruneisen_dict = loadfn(gruneisen_path)
 
@@ -448,7 +448,7 @@ def get_gruneisenparameter(gruneisen_path, structure=None, structure_path=None) 
     for p in gruneisen_dict["phonon"]:
         q = p["q-position"]
         qpts.append(q)
-        m = p["multiplicity"] if "multiplicity" in p else 1
+        m = p.get("multiplicity", 1)
         multiplicities.append(m)
         bands, gruneisenband = [], []
         for b in p["band"]:

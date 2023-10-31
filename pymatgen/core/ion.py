@@ -35,6 +35,7 @@ class Ion(Composition, MSONable, Stringify):
         Also note that (aq) can be included in the formula, e.g. "NaOH (aq)".
 
         :param formula:
+
         Returns:
             Ion
         """
@@ -75,8 +76,9 @@ class Ion(Composition, MSONable, Stringify):
 
     @property
     def formula(self) -> str:
-        """Returns a formula string, with elements sorted by electronegativity,
-        e.g., Li4 Fe4 P4 O16.
+        """Returns a formula string with appended charge. The
+        charge is written with the sign preceding the magnitude, e.g.,
+        'Ca1 +2'. Uncharged species have "(aq)" appended, e.g. "O2 (aq)".
         """
         formula = super().formula
         return f"{formula} {charge_string(self.charge, brackets=False)}"
@@ -90,7 +92,7 @@ class Ion(Composition, MSONable, Stringify):
         chg_str = charge_string(self._charge, brackets=False)
         return anon_formula + chg_str
 
-    def get_reduced_formula_and_factor(self, iupac_ordering: bool = False, hydrates: bool = True) -> tuple[str, float]:
+    def get_reduced_formula_and_factor(self, iupac_ordering: bool = False, hydrates: bool = False) -> tuple[str, float]:
         """Calculates a reduced formula and factor.
 
         Similar to Composition.get_reduced_formula_and_factor except that O-H formulas
@@ -166,6 +168,12 @@ class Ion(Composition, MSONable, Stringify):
         # butanol
         elif formula == "H10C4O":
             formula = "C4H9OH"
+        elif formula == "O" and factor % 3 == 0:
+            formula = "O3"
+            factor /= 3
+        elif formula in ["O", "N", "F", "Cl", "H"] and factor % 2 == 0:
+            formula += "2"
+            factor /= 2
 
         return formula, factor
 
@@ -173,12 +181,12 @@ class Ion(Composition, MSONable, Stringify):
     def reduced_formula(self) -> str:
         """Returns a reduced formula string with appended charge. The
         charge is placed in brackets with the sign preceding the magnitude, e.g.,
-        'Ca[+2]'.
+        'Ca[+2]'. Uncharged species have "(aq)" appended, e.g. "O2(aq)".
         """
-        reduced_formula = super().reduced_formula
-        charge = self._charge / self.get_reduced_composition_and_factor()[1]
+        formula, factor = self.get_reduced_formula_and_factor()
+        charge = self._charge / factor
         chg_str = charge_string(charge)
-        return reduced_formula + chg_str
+        return formula + chg_str
 
     @property
     def alphabetical_formula(self) -> str:
@@ -198,20 +206,20 @@ class Ion(Composition, MSONable, Stringify):
         Returns:
             dict with composition, as well as charge.
         """
-        d = super().as_dict()
-        d["charge"] = self.charge
-        return d
+        dct = super().as_dict()
+        dct["charge"] = self.charge
+        return dct
 
     @classmethod
-    def from_dict(cls, d) -> Ion:
+    def from_dict(cls, dct) -> Ion:
         """Generates an ion object from a dict created by as_dict().
 
         Args:
-            d: {symbol: amount} dict.
+            dct: {symbol: amount} dict.
         """
-        input = deepcopy(d)
-        charge = input.pop("charge")
-        composition = Composition(input)
+        dct_copy = deepcopy(dct)
+        charge = dct_copy.pop("charge")
+        composition = Composition(dct_copy)
         return Ion(composition, charge)
 
     @property
@@ -221,9 +229,9 @@ class Ion(Composition, MSONable, Stringify):
             dict with element symbol and reduced amount e.g.,
         {"Fe": 2.0, "O":3.0}.
         """
-        d = self.composition.to_reduced_dict
-        d["charge"] = self.charge
-        return d
+        dct = self.composition.to_reduced_dict
+        dct["charge"] = self.charge
+        return dct
 
     @property
     def composition(self) -> Composition:
@@ -304,6 +312,6 @@ class Ion(Composition, MSONable, Stringify):
     def to_pretty_string(self) -> str:
         """Pretty string with proper superscripts."""
         str_ = super().reduced_formula
-        if val := formula_double_format(self.charge, False):
+        if val := formula_double_format(self.charge, ignore_ones=False):
             str_ += f"^{val:+}"
         return str_

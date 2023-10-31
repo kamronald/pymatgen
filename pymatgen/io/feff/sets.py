@@ -75,12 +75,12 @@ class AbstractFeffInputSet(MSONable, metaclass=abc.ABCMeta):
 
     def all_input(self):
         """Returns all input files as a dict of {filename: feffio object}."""
-        d = {"HEADER": self.header(), "PARAMETERS": self.tags}
+        dct = {"HEADER": self.header(), "PARAMETERS": self.tags}
 
         if "RECIPROCAL" not in self.tags:
-            d.update({"POTENTIALS": self.potential, "ATOMS": self.atoms})
+            dct.update({"POTENTIALS": self.potential, "ATOMS": self.atoms})
 
-        return d
+        return dct
 
     def write_input(self, output_dir=".", make_dir_if_not_present=True):
         """
@@ -91,8 +91,8 @@ class AbstractFeffInputSet(MSONable, metaclass=abc.ABCMeta):
             make_dir_if_not_present: Set to True if you want the directory (
                 and the whole path) to be created if it is not present.
         """
-        if make_dir_if_not_present and not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if make_dir_if_not_present:
+            os.makedirs(output_dir, exist_ok=True)
 
         feff = self.all_input()
 
@@ -105,7 +105,7 @@ class AbstractFeffInputSet(MSONable, metaclass=abc.ABCMeta):
         with open(f"{output_dir}/feff.inp", "w") as f:
             f.write(feff_input)
 
-        # write the structure to cif file
+        # write the structure to CIF file
         if "ATOMS" not in feff:
             self.atoms.struct.to(fmt="cif", filename=os.path.join(output_dir, feff["PARAMETERS"]["CIF"]))
 
@@ -282,16 +282,16 @@ class FEFFDictSet(AbstractFeffInputSet):
         output.append("")
         return "\n".join(output)
 
-    @staticmethod
-    def from_directory(input_dir):
+    @classmethod
+    def from_directory(cls, input_dir):
         """
         Read in a set of FEFF input files from a directory, which is
         useful when existing FEFF input needs some adjustment.
         """
         sub_d = {}
         for fname, ftype in [("HEADER", Header), ("PARAMETERS", Tags)]:
-            fullzpath = zpath(os.path.join(input_dir, fname))
-            sub_d[fname.lower()] = ftype.from_file(fullzpath)
+            full_zpath = zpath(os.path.join(input_dir, fname))
+            sub_d[fname.lower()] = ftype.from_file(full_zpath)
 
         # Generation of FEFFDict set requires absorbing atom, need to search
         # the index of absorption atom in the structure according to the
@@ -299,10 +299,10 @@ class FEFFDictSet(AbstractFeffInputSet):
 
         absorber_index = []
         radius = None
-        feffinp = zpath(f"{input_dir}/feff.inp")
+        feff_inp = zpath(f"{input_dir}/feff.inp")
 
         if "RECIPROCAL" not in sub_d["parameters"]:
-            input_atoms = Atoms.cluster_from_file(feffinp)
+            input_atoms = Atoms.cluster_from_file(feff_inp)
             shell_species = np.array([x.species_string for x in input_atoms])
 
             # First row of distance matrix represents the distance from the absorber to
@@ -313,18 +313,13 @@ class FEFFDictSet(AbstractFeffInputSet):
             from math import ceil
 
             radius = int(
-                ceil(
-                    input_atoms.get_distance(
-                        input_atoms.index(input_atoms[0]),
-                        input_atoms.index(input_atoms[-1]),
-                    )
-                )
+                ceil(input_atoms.get_distance(input_atoms.index(input_atoms[0]), input_atoms.index(input_atoms[-1])))
             )
 
             for site_index, site in enumerate(sub_d["header"].struct):
                 if site.specie == input_atoms[0].specie:
                     site_atoms = Atoms(sub_d["header"].struct, absorbing_atom=site_index, radius=radius)
-                    site_distance = np.array(site_atoms.get_lines())[:, 5].astype(np.float64)
+                    site_distance = np.array(site_atoms.get_lines())[:, 5].astype(float)
                     site_shell_species = np.array(site_atoms.get_lines())[:, 4]
                     shell_overlap = min(shell_species.shape[0], site_shell_species.shape[0])
 
@@ -342,7 +337,7 @@ class FEFFDictSet(AbstractFeffInputSet):
             CONFIG = loadfn(f"{MODULE_DIR}/MPXANESSet.yaml")
             if radius is None:
                 radius = 10
-            return FEFFDictSet(
+            return cls(
                 absorber_index[0],
                 sub_d["header"].struct,
                 radius=radius,

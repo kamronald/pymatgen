@@ -6,11 +6,11 @@ import json
 import os
 from collections import namedtuple
 from fractions import Fraction
-from typing import TYPE_CHECKING, List, Tuple, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objs as go
+import plotly.graph_objects as go
 import scipy.constants as sc
 
 from pymatgen.analysis.diffraction.core import AbstractDiffractionPatternCalculator
@@ -55,7 +55,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
                 set to 0, no refinement is done. Otherwise, refinement is
                 performed using spglib with provided precision.
             voltage (float): The wavelength is a function of the TEM microscope's
-                voltage. By default, set to 200 kV. Units in kV.
+                voltage (in kV). Defaults to 200.
             beam_direction (tuple): The direction of the electron beam fired onto the sample.
                 By default, set to [0,0,1], which corresponds to the normal direction
                 of the sample plane.
@@ -64,7 +64,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
             debye_waller_factors ({element symbol: float}): Allows the
                 specification of Debye-Waller factors. Note that these
                 factors are temperature dependent.
-            cs (float): the chromatic aberration coefficient. set by default to 1 mm.
+            cs (float): The chromatic aberration coefficient (in mm). Defaults to 1.
         """
         self.symprec = symprec
         self.voltage = voltage
@@ -94,7 +94,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
             coord_right (int): The maximum coordinate value.
 
         Returns:
-            Numpy 2d array
+            np.array: 2d array
         """
         points = [0, 0, 0]
         coord_values = np.arange(coord_left, coord_right + 1)
@@ -121,7 +121,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
             return []
         filtered = np.where(np.dot(np.array(self.beam_direction), np.transpose(points)) == laue_zone)
         result = points[filtered]  # type: ignore
-        return cast(List[Tuple[int, int, int]], [tuple(x) for x in result.tolist()])
+        return cast(list[tuple[int, int, int]], [tuple(x) for x in result.tolist()])
 
     def get_interplanar_spacings(
         self, structure: Structure, points: list[tuple[int, int, int]] | np.ndarray
@@ -195,7 +195,8 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
             coeffs = np.array(ATOMIC_SCATTERING_PARAMS[atom.symbol])
             for plane in bragg_angles:
                 scattering_factor_curr = atom.Z - 41.78214 * s2[plane] * np.sum(
-                    coeffs[:, 0] * np.exp(-coeffs[:, 1] * s2[plane]), axis=None  # type: ignore
+                    coeffs[:, 0] * np.exp(-coeffs[:, 1] * s2[plane]),
+                    axis=None,  # type: ignore
                 )
                 scattering_factors_for_atom[plane] = scattering_factor_curr
             x_ray_factors[atom.symbol] = scattering_factors_for_atom
@@ -286,10 +287,10 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
         Args:
             structure (Structure): The input structure.
             scaled (bool): Required value for inheritance, does nothing in TEM pattern
-            two_theta_range (Tuple): Required value for inheritance, does nothing in TEM pattern
+            two_theta_range (tuple[float, float]): Required value for inheritance, does nothing in TEM pattern
 
         Returns:
-            PandasDataFrame
+            pd.DataFrame
         """
         if self.symprec:
             finder = SpacegroupAnalyzer(structure, symprec=self.symprec)
@@ -444,7 +445,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
         Args:
             p1 (3-tuple): The first point. Fixed.
             p2 (3-tuple): The second point. Fixed.
-            p3 (3-tuple): The point whose coefficients are to be calculted.
+            p3 (3-tuple): The point whose coefficients are to be calculated.
 
         Returns:
             Numpy array
@@ -584,7 +585,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
                 showlegend=False,
             ),
         ]
-        layout = go.Layout(
+        layout = dict(
             title="2D Diffraction Pattern<br>Beam Direction: " + "".join(str(e) for e in self.beam_direction),
             font={"size": 14, "color": "#7f7f7f"},
             hovermode="closest",
@@ -654,7 +655,7 @@ class TEMCalculator(AbstractDiffractionPatternCalculator):
                 showlegend=False,
             )
         ]
-        layout = go.Layout(
+        layout = dict(
             xaxis={
                 "range": [-4, 4],
                 "showgrid": False,

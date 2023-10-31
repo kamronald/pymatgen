@@ -26,13 +26,21 @@ class ElementTestCase(PymatgenTest):
 
         assert id(Element("Fe")) == id(Element("Fe"))  # Test caching
 
+    def test_missing_and_confusing_data(self):
+        with pytest.warns(UserWarning, match="No data available"):
+            _ = Element.H.metallic_radius
+        with pytest.warns(UserWarning, match="No data available"):
+            _ = Element.Og.ionization_energy
+        with pytest.warns(UserWarning, match="Ambiguous values"):
+            _ = Element.H.refractive_index
+
     def test_is_metal(self):
         for metal in ["Fe", "Eu", "Li", "Ca", "In"]:
             assert Element(metal).is_metal
         for non_metal in ["Ge", "Si", "O", "He"]:
             assert not Element(non_metal).is_metal
 
-    def test_nan_X(self):
+    def test_nan_x(self):
         assert math.isnan(Element.He.X)
         els = sorted([Element.He, Element.H, Element.F])
         assert els == [Element.H, Element.F, Element.He]
@@ -201,6 +209,7 @@ class ElementTestCase(PymatgenTest):
                 ["2P0.5", "2P1.5"],
                 ["4S1.5"],
             ],  # f3
+            "Ne": [["1S0"]],
         }
         for k, v in cases.items():
             assert Element(k).term_symbols == v

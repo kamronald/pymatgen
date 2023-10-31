@@ -9,7 +9,7 @@ import copy
 import os
 import warnings
 from collections import defaultdict
-from typing import Literal, Sequence, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
 from monty.design_patterns import cached_class
@@ -31,6 +31,9 @@ from pymatgen.entries.computed_entries import (
 )
 from pymatgen.io.vasp.sets import MITRelaxSet, MPRelaxSet, VaspInputSet
 from pymatgen.util.due import Doi, due
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __author__ = "Amanda Wang, Ryan Kingsbury, Shyue Ping Ong, Anubhav Jain, Stephen Dacek, Sai Jayaraman"
 __copyright__ = "Copyright 2012-2020, The Materials Project"
@@ -714,7 +717,7 @@ class CorrectionsList(Compatibility):
         corrected_energy = corr_entry.energy if corr_entry else None
         correction_uncertainty = corr_entry.correction_uncertainty if corr_entry else None
 
-        d = {
+        dct = {
             "compatibility": type(self).__name__,
             "uncorrected_energy": uncorrected_energy,
             "corrected_energy": corrected_energy,
@@ -734,8 +737,8 @@ class CorrectionsList(Compatibility):
                 "uncertainty": uncer,
             }
             corrections.append(cd)
-        d["corrections"] = corrections
-        return d
+        dct["corrections"] = corrections
+        return dct
 
     def explain(self, entry):
         """Prints an explanation of the corrections that are being applied for a
@@ -1032,12 +1035,9 @@ class MaterialsProject2020Compatibility(Compatibility):
             try:
                 oxi_states = entry.composition.oxi_state_guesses(max_sites=-20)
             except ValueError:
-                oxi_states = []
+                oxi_states = ({},)
 
-            if oxi_states == []:
-                entry.data["oxidation_states"] = {}
-            else:
-                entry.data["oxidation_states"] = oxi_states[0]
+            entry.data["oxidation_states"] = (oxi_states or ({},))[0]
 
         if entry.data["oxidation_states"] == {}:
             warnings.warn(

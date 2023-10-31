@@ -1,4 +1,3 @@
-# pylint: disable=C0414,W0718,C0301
 # ruff: noqa: PLC0414
 """This package contains core modules and classes for representing structures and operations on them."""
 
@@ -6,6 +5,7 @@ from __future__ import annotations
 
 import os
 import warnings
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from ruamel.yaml import YAML
@@ -32,7 +32,11 @@ __author__ = "Pymatgen Development Team"
 __email__ = "pymatgen@googlegroups.com"
 __maintainer__ = "Shyue Ping Ong, Matthew Horton, Janosh Riebesell"
 __maintainer_email__ = "shyuep@gmail.com"
-__version__ = "2023.7.17"
+try:
+    __version__ = version("pymatgen")
+except PackageNotFoundError:  # pragma: no cover
+    # package is not installed
+    pass
 
 
 SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".config", ".pmgrc.yaml")
