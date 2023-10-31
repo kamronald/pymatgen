@@ -607,6 +607,7 @@ class MagneticStructureEnumerator:
         default_magmoms: dict[str, float] | None = None,
         strategies: list[str] | tuple[str, ...] = ("ferromagnetic", "antiferromagnetic"),
         automatic: bool = True,
+        max_unique_sites=8,
         truncate_by_symmetry: bool = True,
         transformation_kwargs: dict | None = None,
     ):
@@ -653,7 +654,7 @@ class MagneticStructureEnumerator:
 
         # other settings
         self.num_orderings = 64
-        self.max_unique_sites = 8
+        self.max_unique_sites = max_unique_sites
 
         # kwargs to pass to transformation (ultimately to enumlib)
         default_transformation_kwargs = {"check_ordered_symmetry": False, "timeout": 5}
