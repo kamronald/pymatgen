@@ -5,7 +5,7 @@ import pytest
 from numpy.testing import assert_allclose
 from pytest import approx
 
-from pymatgen.io.pwscf import PWInput, PWInputError, PWOutput
+from pymatgen.io.qe import PWInput, PWInputError, PWOutput
 from pymatgen.util.testing import TEST_FILES_DIR, PymatgenTest
 
 
