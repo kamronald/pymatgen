@@ -1,0 +1,18 @@
+# All energies are in Rydbergs (Ry), forces in Ha/Bohr (~ 50 eV/A)
+control:
+  calculation: vc-relax
+  nstep: 100
+  forc_conv_thr: 4.d-4
+system:
+  ibrav: 0
+  ecutwfc: 100
+  ecutrho: 1100
+  occupations: smearing
+  degauss: 0.01
+  smearing: mv
+  nspin: 2
+electrons:
+  electron_maxstep: 100
+  conv_thr: 1.d-6
+kpoint_settings:
+  kspacing: 0.25
