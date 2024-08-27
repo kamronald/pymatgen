@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import pytest
 from numpy.testing import assert_array_equal
 
@@ -9,9 +7,7 @@ from pymatgen.io.shengbte import Control
 from pymatgen.util.testing import TEST_FILES_DIR, PymatgenTest
 
 f90nml = pytest.importorskip("f90nml")
-TEST_DIR = f"{TEST_FILES_DIR}/shengbte"
-
-module_dir = os.path.dirname(os.path.abspath(__file__))
+TEST_DIR = f"{TEST_FILES_DIR}/io/shengbte"
 
 
 class TestShengBTE(PymatgenTest):
@@ -50,11 +46,11 @@ class TestShengBTE(PymatgenTest):
         assert io["lattvec"][0] == [0.0, 2.734363999, 2.734363999]
         assert io["lattvec"][1] == [2.734363999, 0.0, 2.734363999]
         assert io["lattvec"][2] == [2.734363999, 2.734363999, 0.0]
-        assert isinstance(io["elements"], (list, str))
+        assert isinstance(io["elements"], list | str)
         if isinstance(io["elements"], list):
             all_strings = all(isinstance(item, str) for item in io["elements"])
             assert all_strings
-        assert isinstance(io["types"], (list, int))
+        assert isinstance(io["types"], list | int)
         if isinstance(io["types"], list):
             all_ints = all(isinstance(item, int) for item in io["types"])
             assert all_ints
@@ -70,21 +66,21 @@ class TestShengBTE(PymatgenTest):
         io.to_file(filename=f"{self.tmp_path}/test_control")
 
         with open(f"{self.tmp_path}/test_control") as file:
-            test_string = file.read()
+            test_str = file.read()
         with open(f"{TEST_DIR}/CONTROL-CSLD_Si") as reference_file:
             reference_string = reference_file.read()
-        assert test_string == reference_string
+        assert test_str == reference_string
 
     def test_from_dict(self):
         io = Control.from_dict(self.test_dict)
         io.to_file(filename=f"{self.tmp_path}/test_control")
         with open(f"{self.tmp_path}/test_control") as file:
-            test_string = file.read()
+            test_str = file.read()
         with open(f"{TEST_DIR}/CONTROL-CSLD_Si") as reference_file:
             reference_string = reference_file.read()
-        assert test_string == reference_string
+        assert test_str == reference_string
 
-    def test_msonable_implementation(self):
+    def test_as_from_dict(self):
         # tests as dict and from dict methods
         ctrl_from_file = Control.from_file(self.filename)
         control_from_dict = Control.from_dict(ctrl_from_file.as_dict())

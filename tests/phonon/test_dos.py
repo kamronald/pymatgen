@@ -11,12 +11,14 @@ from pymatgen.core import Element
 from pymatgen.phonon.dos import CompletePhononDos, PhononDos
 from pymatgen.util.testing import TEST_FILES_DIR, PymatgenTest
 
+TEST_DIR = f"{TEST_FILES_DIR}/phonon/dos"
+
 
 class TestPhononDos(PymatgenTest):
     def setUp(self):
-        with open(f"{TEST_FILES_DIR}/NaCl_ph_dos.json") as file:
+        with open(f"{TEST_DIR}/NaCl_ph_dos.json") as file:
             self.dos = PhononDos.from_dict(json.load(file))
-        with open(f"{TEST_FILES_DIR}/NaCl_complete_ph_dos.json") as file:
+        with open(f"{TEST_DIR}/NaCl_complete_ph_dos.json") as file:
             self.structure = CompletePhononDos.from_dict(json.load(file)).structure
 
     def test_repr(self):
@@ -45,7 +47,7 @@ class TestPhononDos(PymatgenTest):
 
     def test_dict_methods(self):
         json_str = json.dumps(self.dos.as_dict())
-        assert json_str is not None
+        assert json_str.startswith('{"@module": "pymatgen.phonon.dos", "@class": "PhononDos", "frequencies":')
         self.assert_msonable(self.dos)
 
     def test_thermodynamic_functions(self):
@@ -125,10 +127,60 @@ class TestPhononDos(PymatgenTest):
         peak_freq = self.dos.get_last_peak(threshold=0.5)
         assert peak_freq == approx(4.9662820761)
 
+    def test_get_dos_fp(self):
+        # normalize=True
+        dos_fp = self.dos.get_dos_fp(min_f=-1, max_f=5, n_bins=56, normalize=True)
+        bin_width = np.diff(dos_fp.frequencies)[0][0]
+        assert max(dos_fp.frequencies[0]) <= 5
+        assert min(dos_fp.frequencies[0]) >= -1
+        assert len(dos_fp.frequencies[0]) == 56
+        assert sum(dos_fp.densities * bin_width) == approx(1)
+        # normalize=False
+        dos_fp2 = self.dos.get_dos_fp(min_f=-1, max_f=5, n_bins=56, normalize=False)
+        bin_width2 = np.diff(dos_fp2.frequencies)[0][0]
+        assert sum(dos_fp2.densities * bin_width2) == approx(13.722295798242834)
+        assert dos_fp2.bin_width == approx(bin_width2)
+        # binning=False
+        dos_fp = self.dos.get_dos_fp(min_f=None, max_f=None, n_bins=56, normalize=True, binning=False)
+        assert dos_fp.n_bins == len(self.dos.frequencies)
+
+    def test_get_dos_fp_similarity(self):
+        # Tanimoto
+        dos_fp = self.dos.get_dos_fp(min_f=-1, max_f=6, n_bins=56, normalize=True)
+        dos_fp2 = self.dos.get_dos_fp(min_f=-1, max_f=6, n_bins=56, normalize=False)
+        similarity_index = self.dos.get_dos_fp_similarity(dos_fp, dos_fp2, col=1, metric="tanimoto")
+        assert similarity_index == approx(0.0553088193)
+
+        dos_fp = self.dos.get_dos_fp(min_f=-1, max_f=6, n_bins=56, normalize=True)
+        dos_fp2 = self.dos.get_dos_fp(min_f=-1, max_f=6, n_bins=56, normalize=True)
+        similarity_index = self.dos.get_dos_fp_similarity(dos_fp, dos_fp2, col=1, metric="tanimoto")
+        assert similarity_index == approx(1)
+
+        # Wasserstein
+        dos_fp = self.dos.get_dos_fp(min_f=-1, max_f=6, n_bins=56, normalize=True)
+        dos_fp2 = self.dos.get_dos_fp(min_f=-1, max_f=6, n_bins=56, normalize=True)
+        similarity_index = self.dos.get_dos_fp_similarity(dos_fp, dos_fp2, col=1, metric="wasserstein")
+        assert similarity_index == approx(0)
+
+    def test_dos_fp_exceptions(self):
+        dos_fp = self.dos.get_dos_fp(min_f=-1, max_f=5, n_bins=56, normalize=True)
+        dos_fp2 = self.dos.get_dos_fp(min_f=-1, max_f=5, n_bins=56, normalize=True)
+        # test exceptions
+        with pytest.raises(
+            ValueError,
+            match="Cannot compute similarity index. When normalize=True, then please set metric=cosine-sim",
+        ):
+            self.dos.get_dos_fp_similarity(dos_fp, dos_fp2, col=1, metric="tanimoto", normalize=True)
+
+        valid_metrics = ("tanimoto", "wasserstein", "cosine-sim")
+        metric = "Dot"
+        with pytest.raises(ValueError, match=re.escape(f"Invalid {metric=}, choose from {valid_metrics}.")):
+            self.dos.get_dos_fp_similarity(dos_fp, dos_fp2, col=1, metric=metric, normalize=False)
+
 
 class TestCompletePhononDos(PymatgenTest):
     def setUp(self):
-        with open(f"{TEST_FILES_DIR}/NaCl_complete_ph_dos.json") as file:
+        with open(f"{TEST_DIR}/NaCl_complete_ph_dos.json") as file:
             self.cdos = CompletePhononDos.from_dict(json.load(file))
 
     def test_properties(self):

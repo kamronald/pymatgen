@@ -1,31 +1,26 @@
 from __future__ import annotations
 
-import collections
 import os.path
+import tarfile
+from collections import defaultdict
 
 import pytest
+from monty.tempfile import ScratchDir
 from pytest import approx
 
 from pymatgen.io.abinit.pseudos import Pseudo, PseudoTable
 from pymatgen.util.testing import TEST_FILES_DIR, PymatgenTest
 
-_test_dir = f"{TEST_FILES_DIR}/abinit"
+TEST_DIR = f"{TEST_FILES_DIR}/io/abinit"
 
 
-def ref_file(filename):
-    return os.path.join(_test_dir, filename)
-
-
-def ref_files(*filenames):
-    return list(map(ref_file, filenames))
-
-
-class PseudoTestCase(PymatgenTest):
+class TestPseudo(PymatgenTest):
     def setUp(self):
-        nc_pseudo_fnames = collections.defaultdict(list)
-        nc_pseudo_fnames["Si"] = ref_files("14si.pspnc", "14si.4.hgh", "14-Si.LDA.fhi")
+        nc_pseudo_fnames = defaultdict(list)
+        nc_pseudo_fnames["Si"] = [f"{TEST_DIR}/{file}" for file in ("14si.pspnc", "14si.4.hgh", "14-Si.LDA.fhi")]
 
-        self.nc_pseudos = collections.defaultdict(list)
+        self.nc_pseudos = defaultdict(list)
+        self.paw_pseudos = defaultdict(list)
 
         for symbol, file_names in nc_pseudo_fnames.items():
             for file_name in file_names:
@@ -99,9 +94,38 @@ class PseudoTestCase(PymatgenTest):
         # Test pickle
         self.serialize_with_pickle(table, test_eq=False)
 
+    def test_paw_pseudos(self):
+        """Test 28ni.paw."""
+        file_name = f"{TEST_DIR}/28ni.paw.tar.xz"
+        symbol = "Ni"
+        with ScratchDir(".") as tmp_dir, tarfile.open(file_name, mode="r:xz") as t:
+            t.extractall(tmp_dir)  # noqa: S202
+            path = os.path.join(tmp_dir, "28ni.paw")
+            pseudo = Pseudo.from_file(path)
+
+            assert repr(pseudo)
+            assert str(pseudo)
+            assert not pseudo.isnc
+            assert pseudo.ispaw
+            assert pseudo.Z == 28
+            assert pseudo.symbol == symbol
+            assert pseudo.Z_val == 18
+            assert pseudo.paw_radius >= 0.0
+
+            assert pseudo.l_max == 2
+            assert pseudo.l_local == 0
+            assert pseudo.supports_soc
+            assert pseudo.md5 is not None
+
+            # Test pickle
+            self.serialize_with_pickle(pseudo)
+
+            # Test MSONable
+            self.assert_msonable(pseudo)
+
     def test_pawxml_pseudos(self):
         """Test O.GGA_PBE-JTH-paw.xml."""
-        oxygen = Pseudo.from_file(ref_file("O.GGA_PBE-JTH-paw.xml"))
+        oxygen = Pseudo.from_file(f"{TEST_DIR}/O.GGA_PBE-JTH-paw.xml")
         assert repr(oxygen)
         assert str(oxygen)
         assert isinstance(oxygen.as_dict(), dict)
@@ -130,7 +154,7 @@ class PseudoTestCase(PymatgenTest):
 
     def test_oncvpsp_pseudo_sr(self):
         """Test the ONCVPSP Ge pseudo (scalar relativistic version)."""
-        ger = Pseudo.from_file(ref_file("ge.oncvpsp"))
+        ger = Pseudo.from_file(f"{TEST_DIR}/ge.oncvpsp")
         assert repr(ger)
         assert str(ger)
         assert isinstance(ger.as_dict(), dict)
@@ -152,7 +176,7 @@ class PseudoTestCase(PymatgenTest):
 
     def test_oncvpsp_pseudo_fr(self):
         """Test the ONCVPSP Pb pseudo (relativistic version with SO)."""
-        pb = Pseudo.from_file(ref_file("Pb-d-3_r.psp8"))
+        pb = Pseudo.from_file(f"{TEST_DIR}/Pb-d-3_r.psp8")
         repr(pb)
         str(pb)
 
@@ -173,7 +197,7 @@ class PseudoTestCase(PymatgenTest):
 class TestPseudoTable(PymatgenTest):
     def test_methods(self):
         """Test PseudoTable methods."""
-        table = PseudoTable(ref_files("14si.pspnc", "14si.4.hgh", "14-Si.LDA.fhi"))
+        table = PseudoTable([f"{TEST_DIR}/{file}" for file in ("14si.pspnc", "14si.4.hgh", "14-Si.LDA.fhi")])
         assert str(table)
         assert len(table) == 3
         for pseudo in table:
@@ -185,8 +209,8 @@ class TestPseudoTable(PymatgenTest):
         # Data persistence
         self.serialize_with_pickle(table, test_eq=False)
 
-        d = table.as_dict()
-        PseudoTable.from_dict(d)
+        dct = table.as_dict()
+        PseudoTable.from_dict(dct)
         self.assert_msonable(table)
 
         selected = table.select_symbols("Si")

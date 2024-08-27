@@ -209,7 +209,7 @@ if __name__ == "__main__":
             # Definition of the facets
             all_planes_point_indices = [algo.plane_points]
             if algo.other_plane_points is not None:
-                all_planes_point_indices.extend(algo.other_plane_points)
+                all_planes_point_indices += algo.other_plane_points
 
             # Loop on the facets
             explicit_permutations_per_plane = []
@@ -236,7 +236,7 @@ if __name__ == "__main__":
                 sym_measures = [c["symmetry_measure"] for c in csms]
                 prt1(string="Continuous symmetry measures", printing_volume=printing_volume)
                 prt1(string=sym_measures, printing_volume=printing_volume)
-                csms_with_recorded_permutation = []  # type: ignore
+                csms_with_recorded_permutation: list = []
                 explicit_permutations = []
                 for icsm, csm in enumerate(csms):
                     found = False
@@ -279,7 +279,7 @@ if __name__ == "__main__":
                 f"Get the explicit optimized permutations for geometry {cg.name!r} (symbol : "
                 f'{cg_symbol!r}) ? ("y" to confirm, "q" to quit)\n'
             )
-            if test not in ["y", "q"]:
+            if test not in ("y", "q"):
                 print("Wrong key, try again")
                 continue
             if test == "y":
@@ -305,10 +305,9 @@ if __name__ == "__main__":
             # Definition of the facets
             all_planes_point_indices = [algo.plane_points]
             if algo.other_plane_points is not None:
-                all_planes_point_indices.extend(algo.other_plane_points)
+                all_planes_point_indices += algo.other_plane_points
 
             # Setup of the permutations to be used for this algorithm
-
             indices = list(range(cg.coordination_number))
             if permutations_setup_type == "all":
                 perms_iterator = itertools.permutations(indices)
@@ -400,7 +399,8 @@ if __name__ == "__main__":
                     else:
                         perms_used[some_perm] = 1
                 tcurrent = time.process_time()
-                time_left = (n_permutations - idx_perm) * (tcurrent - t0) / idx_perm  # type: ignore
+                assert n_permutations is not None
+                time_left = (n_permutations - idx_perm) * (tcurrent - t0) / idx_perm
                 time_left = f"{time_left:.1f}"
                 idx_perm += 1
             print(
@@ -432,5 +432,5 @@ if __name__ == "__main__":
         if test == "y":
             new_geom_dir = "new_geometry_files"
             os.makedirs(new_geom_dir, exist_ok=True)
-            with open(f"{new_geom_dir}/{cg_symbol}.json", "w") as file:
+            with open(f"{new_geom_dir}/{cg_symbol}.json", mode="w") as file:
                 json.dump(cg.as_dict(), file)

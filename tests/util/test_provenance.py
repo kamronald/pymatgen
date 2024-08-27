@@ -1,17 +1,15 @@
+"""Unit tests for StructureNL (SNL) format."""
+
 from __future__ import annotations
 
-import datetime
-import unittest
+from datetime import datetime, timedelta, timezone
+from unittest import TestCase
 
 import numpy as np
 import pytest
 
 from pymatgen.core.structure import Molecule, Structure
 from pymatgen.util.provenance import Author, HistoryNode, StructureNL
-
-"""
-Unit tests for StructureNL (SNL) format
-"""
 
 __author__ = "Anubhav Jain"
 __credits__ = "Shyue Ping Ong"
@@ -22,7 +20,7 @@ __email__ = "ajain@lbl.gov"
 __date__ = "2/14/13"
 
 
-class StructureNLCase(unittest.TestCase):
+class TestStructureNL(TestCase):
     def setUp(self):
         # set up a Structure
         self.struct = Structure(np.eye(3, 3) * 3, ["Fe"], [[0, 0, 0]])
@@ -47,7 +45,7 @@ class StructureNLCase(unittest.TestCase):
             "\n year = {2013}\n}"
         )
         repeat = "REPEAT" * 10000
-        self.superlong = "@misc{SuperLong,\ntitle = {{" + repeat + "}}}"
+        self.superlong = f"@misc{{SuperLong,\ntitle = {{{repeat}}}}}"
         self.unicode_title = "@misc{Unicode_Title,\ntitle = {{A \u73ab is a rose}}}"
         self.junk = "This is junk text, not a BibTeX reference"
 
@@ -98,7 +96,7 @@ class StructureNLCase(unittest.TestCase):
 
         # An empty list should not work
         with pytest.raises(
-            ValueError,
+            TypeError,
             match="Invalid format for SNL reference! Should be empty string or BibTeX string.",
         ):
             StructureNL(self.struct, self.hulk, references=[])
@@ -117,7 +115,7 @@ class StructureNLCase(unittest.TestCase):
         StructureNL(self.struct, self.hulk, references=f"{self.matproj}\n{self.pmg}")
 
         # super long references are bad
-        with pytest.raises(ValueError, match="The BibTeX string must be fewer than 20000 chars, you have 60030"):
+        with pytest.raises(ValueError, match="The BibTeX string must be fewer than 20000 chars, you have 60028"):
             StructureNL(self.struct, self.hulk, references=self.superlong)
 
     def test_history_nodes(self):
@@ -155,7 +153,7 @@ class StructureNLCase(unittest.TestCase):
 
     def test_eq(self):
         # test basic Equal()
-        created_at = datetime.datetime.now()
+        created_at = datetime.now(tz=timezone.utc)
         struct_nl = StructureNL(
             self.struct,
             self.hulk,
@@ -179,8 +177,8 @@ class StructureNLCase(unittest.TestCase):
         assert struct_nl == struct_nl2
 
         # change the created at date, now they are no longer equal
-        created_at = datetime.datetime.now() + datetime.timedelta(days=-1)
-        c = StructureNL(
+        created_at = datetime.now(tz=timezone.utc) + timedelta(days=-1)
+        snl_new_date = StructureNL(
             self.struct,
             self.hulk,
             ["test_project"],
@@ -190,10 +188,10 @@ class StructureNLCase(unittest.TestCase):
             [self.valid_node, self.valid_node2],
             created_at,
         )
-        assert struct_nl != c, "__eq__() method is broken! false positive"
+        assert struct_nl != snl_new_date, "__eq__() method is broken! false positive"
 
         # or try a different structure, those should not be equal
-        d = StructureNL(
+        snl_diff_struct = StructureNL(
             self.s2,
             self.hulk,
             ["test_project"],
@@ -203,7 +201,7 @@ class StructureNLCase(unittest.TestCase):
             [self.valid_node, self.valid_node2],
             created_at,
         )
-        assert struct_nl != d, "__eq__() method is broken! false positive"
+        assert struct_nl != snl_diff_struct, "__eq__() method is broken! false positive"
 
     def test_as_from_dict(self):
         # no complicated objects in the 'data' or 'nodes' field
@@ -216,8 +214,8 @@ class StructureNLCase(unittest.TestCase):
             {"_my_data": "string"},
             [self.valid_node, self.valid_node2],
         )
-        b = StructureNL.from_dict(struct_nl.as_dict())
-        assert struct_nl == b
+        round_trip_from_dict = StructureNL.from_dict(struct_nl.as_dict())
+        assert struct_nl == round_trip_from_dict
         # complicated objects in the 'data' and 'nodes' field
         complicated_node = {
             "name": "complicated node",
@@ -233,19 +231,19 @@ class StructureNLCase(unittest.TestCase):
             {"_my_data": {"structure": self.s2}},
             [complicated_node, self.valid_node],
         )
-        b = StructureNL.from_dict(struct_nl.as_dict())
+        round_trip_from_dict = StructureNL.from_dict(struct_nl.as_dict())
         assert (
-            struct_nl == b
+            struct_nl == round_trip_from_dict
         ), "to/from dict is broken when object embedding is used! Apparently MontyEncoding is broken..."
 
         # Test molecule
         mol_nl = StructureNL(self.mol, self.hulk, references=self.pmg)
-        b = StructureNL.from_dict(mol_nl.as_dict())
-        assert mol_nl == b
+        round_trip_from_dict = StructureNL.from_dict(mol_nl.as_dict())
+        assert mol_nl == round_trip_from_dict
 
     def test_from_structures(self):
-        s1 = Structure([[5, 0, 0], [0, 5, 0], [0, 0, 5]], ["Fe"], [[0, 0, 0]])
-        s2 = Structure([[5, 0, 0], [0, 5, 0], [0, 0, 5]], ["Mn"], [[0, 0, 0]])
+        s1 = Structure(np.eye(3) * 5, ["Fe"], [[0, 0, 0]])
+        s2 = Structure(np.eye(3) * 5, ["Mn"], [[0, 0, 0]])
         remarks = ["unittest"]
         authors = "Test User <test@materialsproject.com>"
         snl_list = StructureNL.from_structures([s1, s2], authors, remarks=remarks)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 import pytest
 import scipy.special
@@ -13,10 +15,12 @@ __author__ = "Jimmy-Xuan Shen"
 __copyright__ = "Copyright 2022, The Materials Project"
 __email__ = "jmmshn@gmail.com"
 
+TEST_DIR = f"{TEST_FILES_DIR}/io/vasp"
+
 
 class TestVasprun(PymatgenTest):
     def test_optics(self):
-        eps_data_path = f"{TEST_FILES_DIR}/reproduce_eps"
+        eps_data_path = f"{TEST_DIR}/fixtures/reproduce_eps"
         vrun = Vasprun(f"{eps_data_path}/vasprun.xml")
         dfc = DielectricFunctionCalculator.from_directory(eps_data_path)
         egrid, eps = dfc.get_epsilon(0, 0)
@@ -49,6 +53,10 @@ class TestVasprun(PymatgenTest):
         assert len(x_val) == len(y_val) == len(text)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" and int(np.__version__[0]) >= 2,
+    reason="Fails on Windows with numpy > 2.0.0, awaiting https://github.com/scipy/scipy/issues/21052 resolution",
+)
 def test_delta_func():
     x = np.array([0, 1, 2, 3, 4, 5])
 

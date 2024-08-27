@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import collections
-import os
 import unittest
 import unittest.mock
+from itertools import combinations
 from numbers import Number
+from unittest import TestCase
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,12 +32,12 @@ from pymatgen.analysis.phase_diagram import (
 from pymatgen.core import Composition, DummySpecies, Element
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.entry_tools import EntrySet
-from pymatgen.util.testing import PymatgenTest
+from pymatgen.util.testing import TEST_FILES_DIR, PymatgenTest
 
-module_dir = os.path.dirname(os.path.abspath(__file__))
+TEST_DIR = f"{TEST_FILES_DIR}/analysis"
 
 
-class TestPDEntry(unittest.TestCase):
+class TestPDEntry(TestCase):
     def setUp(self):
         comp = Composition("LiFeO2")
         self.entry = PDEntry(comp, 53, name="mp-757614")
@@ -65,6 +66,14 @@ class TestPDEntry(unittest.TestCase):
         expected_comp = Composition("LiFe")
         assert comp == expected_comp
 
+    def test_formula(self):
+        assert self.entry.formula == "Li1 Fe1 O2"
+        assert self.gp_entry.formula == "Li1 Fe1 O2"
+
+    def test_reduced_formula(self):
+        assert self.entry.reduced_formula == "LiFeO2"
+        assert self.gp_entry.reduced_formula == "LiFeO2"
+
     def test_elements(self):
         expected_elements = list(map(Element, ["Li", "Fe", "O"]))
         assert self.entry.elements == expected_elements
@@ -74,17 +83,17 @@ class TestPDEntry(unittest.TestCase):
         assert not self.gp_entry.is_element
 
     def test_as_from_dict(self):
-        d = self.entry.as_dict()
+        dct = self.entry.as_dict()
         gpd = self.gp_entry.as_dict()
-        entry = PDEntry.from_dict(d)
+        entry = PDEntry.from_dict(dct)
 
         assert entry.name == "mp-757614"
         assert entry.energy_per_atom == 53.0 / 4
-        gpentry = GrandPotPDEntry.from_dict(gpd)
-        assert gpentry.name == "mp-757614"
-        assert gpentry.energy_per_atom == 50.0 / 2
+        gp_entry = GrandPotPDEntry.from_dict(gpd)
+        assert gp_entry.name == "mp-757614"
+        assert gp_entry.energy_per_atom == 50.0 / 2
 
-        d_anon = d.copy()
+        d_anon = dct.copy()
         del d_anon["name"]
         try:
             entry = PDEntry.from_dict(d_anon)
@@ -99,22 +108,21 @@ class TestPDEntry(unittest.TestCase):
         assert str(pde) == "PDEntry : Li1 Fe1 O2 with energy = 53.0000"
 
     def test_read_csv(self):
-        entries = EntrySet.from_csv(f"{module_dir}/pd_entries_test.csv")
+        entries = EntrySet.from_csv(f"{TEST_DIR}/pd_entries_test.csv")
         assert entries.chemsys == {"Li", "Fe", "O"}, "Wrong elements!"
         assert len(entries) == 490, "Wrong number of entries!"
 
 
-class TestTransformedPDEntry(unittest.TestCase):
+class TestTransformedPDEntry(TestCase):
     def setUp(self):
         comp = Composition("LiFeO2")
         entry = PDEntry(comp, 53)
 
-        terminal_compositions = ["Li2O", "FeO", "LiO8"]
-        terminal_compositions = [Composition(c) for c in terminal_compositions]
+        terminal_compositions = [*map(Composition, ("Li2O", "FeO", "LiO8"))]
 
         sp_mapping = {}
         for idx, comp in enumerate(terminal_compositions):
-            sp_mapping[comp] = DummySpecies("X" + chr(102 + idx))
+            sp_mapping[comp] = DummySpecies(f"X{chr(102 + idx)}")
 
         self.transformed_entry = TransformedPDEntry(entry, sp_mapping)
 
@@ -163,7 +171,7 @@ class TestTransformedPDEntry(unittest.TestCase):
 
 class TestPhaseDiagram(PymatgenTest):
     def setUp(self):
-        self.entries = EntrySet.from_csv(f"{module_dir}/pd_entries_test.csv")
+        self.entries = EntrySet.from_csv(f"{TEST_DIR}/pd_entries_test.csv")
         self.pd = PhaseDiagram(self.entries)
 
     def test_init(self):
@@ -185,7 +193,7 @@ class TestPhaseDiagram(PymatgenTest):
     def test_dim1(self):
         # Ensure that dim 1 PDs can be generated.
         for el in ("Li", "Fe", "O2"):
-            entries = [entry for entry in self.entries if entry.composition.reduced_formula == el]
+            entries = [entry for entry in self.entries if entry.reduced_formula == el]
             pd = PhaseDiagram(entries)
             assert len(pd.stable_entries) == 1
 
@@ -214,7 +222,7 @@ class TestPhaseDiagram(PymatgenTest):
         assert tuple(pd.elements) == tuple(ordering)
 
     def test_stable_entries(self):
-        stable_formulas = [ent.composition.reduced_formula for ent in self.pd.stable_entries]
+        stable_formulas = [ent.reduced_formula for ent in self.pd.stable_entries]
         expected_stable = "Fe2O3 Li5FeO4 LiFeO2 Fe3O4 Li Fe Li2O O2 FeO".split()
         for formula in expected_stable:
             assert formula in stable_formulas, f"{formula} not in stable entries!"
@@ -235,7 +243,7 @@ class TestPhaseDiagram(PymatgenTest):
         }
 
         for entry in self.pd.stable_entries:
-            formula = entry.composition.reduced_formula
+            formula = entry.reduced_formula
             expected = expected_formation_energies[formula]
             n_atoms = entry.composition.num_atoms
             # test get_form_energy
@@ -258,7 +266,7 @@ class TestPhaseDiagram(PymatgenTest):
             "O2": -25.54966885,
         }
         for entry in self.pd.stable_entries:
-            formula = entry.composition.reduced_formula
+            formula = entry.reduced_formula
             actual = self.pd.get_reference_energy(entry.composition)
             expected = expected_ref_energies[formula]
             assert actual == approx(expected), formula
@@ -309,7 +317,7 @@ class TestPhaseDiagram(PymatgenTest):
 
             with pytest.warns(UserWarning, match=match_msg):
                 out = method(too_neg_entry, on_error="warn")
-                assert out == expected
+            assert out == expected
 
             out = method(too_neg_entry, on_error="ignore")
             assert out == expected
@@ -343,7 +351,7 @@ class TestPhaseDiagram(PymatgenTest):
     def test_get_phase_separation_energy(self):
         for entry in self.pd.unstable_entries:
             if entry.composition.fractional_composition not in [
-                e.composition.fractional_composition for e in self.pd.stable_entries
+                entry.composition.fractional_composition for entry in self.pd.stable_entries
             ]:
                 assert (
                     self.pd.get_phase_separation_energy(entry) >= 0
@@ -391,7 +399,7 @@ class TestPhaseDiagram(PymatgenTest):
 
         duplicate_entry = PDEntry("Li2O", -14.31361175)
         scaled_dup_entry = PDEntry("Li4O2", -14.31361175 * 2)
-        stable_entry = next(e for e in self.pd.stable_entries if e.name == "Li2O")
+        stable_entry = next(entry for entry in self.pd.stable_entries if entry.name == "Li2O")
 
         assert self.pd.get_phase_separation_energy(duplicate_entry) == self.pd.get_phase_separation_energy(
             stable_entry
@@ -415,9 +423,7 @@ class TestPhaseDiagram(PymatgenTest):
             ), "The number of decomposition phases can at most be equal to the number of components."
 
         # Just to test decomposition for a fictitious composition
-        actual = {
-            entry.composition.formula: amt for entry, amt in self.pd.get_decomposition(Composition("Li3Fe7O11")).items()
-        }
+        actual = {entry.formula: amt for entry, amt in self.pd.get_decomposition(Composition("Li3Fe7O11")).items()}
         expected = {
             "Fe2 O2": 0.0952380952380949,
             "Li1 Fe1 O2": 0.5714285714285714,
@@ -441,7 +447,7 @@ class TestPhaseDiagram(PymatgenTest):
             {"evolution": -1.0, "chempot": -10.48758201, "reaction": "Li2O -> 2 Li + 0.5 O2"},
         ]
         result = self.pd.get_element_profile(Element("O"), Composition("Li2O"))
-        for d1, d2 in zip(expected, result):
+        for d1, d2 in zip(expected, result, strict=True):
             assert d1["evolution"] == approx(d2["evolution"])
             assert d1["chempot"] == approx(d2["chempot"])
             assert d1["reaction"] == str(d2["reaction"])
@@ -484,8 +490,8 @@ class TestPhaseDiagram(PymatgenTest):
     def test_1d_pd(self):
         entry = PDEntry("H", 0)
         pd = PhaseDiagram([entry])
-        decomp, e = pd.get_decomp_and_e_above_hull(PDEntry("H", 1))
-        assert e == 1
+        decomp, e_above_hull = pd.get_decomp_and_e_above_hull(PDEntry("H", 1))
+        assert e_above_hull == 1
         assert decomp[entry] == approx(1.0)
 
     def test_get_critical_compositions_fractional(self):
@@ -499,7 +505,7 @@ class TestPhaseDiagram(PymatgenTest):
             Composition("Li0.3243244Fe0.1621621O0.51351349"),
             Composition("Li3FeO4").fractional_composition,
         ]
-        for crit, exp in zip(comps, expected):
+        for crit, exp in zip(comps, expected, strict=True):
             assert crit.almost_equals(exp, rtol=0, atol=1e-5)
 
         comps = self.pd.get_critical_compositions(c1, c3)
@@ -509,7 +515,7 @@ class TestPhaseDiagram(PymatgenTest):
             Composition("Li5FeO4").fractional_composition,
             Composition("Li2O").fractional_composition,
         ]
-        for crit, exp in zip(comps, expected):
+        for crit, exp in zip(comps, expected, strict=True):
             assert crit.almost_equals(exp, rtol=0, atol=1e-5)
 
     def test_get_critical_compositions(self):
@@ -523,7 +529,7 @@ class TestPhaseDiagram(PymatgenTest):
             Composition("Li0.3243244Fe0.1621621O0.51351349") * 7.4,
             Composition("Li3FeO4"),
         ]
-        for crit, exp in zip(comps, expected):
+        for crit, exp in zip(comps, expected, strict=True):
             assert crit.almost_equals(exp, rtol=0, atol=1e-5)
 
         comps = self.pd.get_critical_compositions(c1, c3)
@@ -533,7 +539,7 @@ class TestPhaseDiagram(PymatgenTest):
             Composition("Li5FeO4") / 3,
             Composition("Li2O"),
         ]
-        for crit, exp in zip(comps, expected):
+        for crit, exp in zip(comps, expected, strict=True):
             assert crit.almost_equals(exp, rtol=0, atol=1e-5)
 
         # Don't fail silently if input compositions aren't in phase diagram
@@ -554,7 +560,7 @@ class TestPhaseDiagram(PymatgenTest):
             Composition("Li0.3243244Fe0.1621621O0.51351349") * 7.4,
             Composition("Li3FeO4"),
         ]
-        for crit, exp in zip(comps, expected):
+        for crit, exp in zip(comps, expected, strict=True):
             assert crit.almost_equals(exp, rtol=0, atol=1e-5)
 
         # case where the endpoints are identical
@@ -615,6 +621,7 @@ class TestPhaseDiagram(PymatgenTest):
         dumpfn(self.pd, f"{self.tmp_path}/pd.json")
         pd = loadfn(f"{self.tmp_path}/pd.json")
         assert isinstance(pd, PhaseDiagram)
+        assert pd.elements == self.pd.elements
         assert {*pd.as_dict()} == {*self.pd.as_dict()}
 
     def test_el_refs(self):
@@ -633,14 +640,14 @@ class TestPhaseDiagram(PymatgenTest):
                 PhaseDiagram(entries=entries)
 
 
-class TestGrandPotentialPhaseDiagram(unittest.TestCase):
+class TestGrandPotentialPhaseDiagram(TestCase):
     def setUp(self):
-        self.entries = EntrySet.from_csv(f"{module_dir}/pd_entries_test.csv")
+        self.entries = EntrySet.from_csv(f"{TEST_DIR}/pd_entries_test.csv")
         self.pd = GrandPotentialPhaseDiagram(self.entries, {Element("O"): -5})
         self.pd6 = GrandPotentialPhaseDiagram(self.entries, {Element("O"): -6})
 
     def test_stable_entries(self):
-        stable_formulas = [ent.original_entry.composition.reduced_formula for ent in self.pd.stable_entries]
+        stable_formulas = [ent.original_entry.reduced_formula for ent in self.pd.stable_entries]
         expected_stable = ["Li5FeO4", "Li2FeO3", "LiFeO2", "Fe2O3", "Li2O2"]
         for formula in expected_stable:
             assert formula in stable_formulas, f"{formula} not in stable entries!"
@@ -648,8 +655,7 @@ class TestGrandPotentialPhaseDiagram(unittest.TestCase):
 
     def test_get_formation_energy(self):
         stable_formation_energies = {
-            ent.original_entry.composition.reduced_formula: self.pd.get_form_energy(ent)
-            for ent in self.pd.stable_entries
+            ent.original_entry.reduced_formula: self.pd.get_form_energy(ent) for ent in self.pd.stable_entries
         }
         expected_formation_energies = {
             "Fe2O3": 0.0,
@@ -670,9 +676,9 @@ class TestGrandPotentialPhaseDiagram(unittest.TestCase):
         )
 
 
-class TestCompoundPhaseDiagram(unittest.TestCase):
+class TestCompoundPhaseDiagram(TestCase):
     def setUp(self):
-        self.entries = EntrySet.from_csv(f"{module_dir}/pd_entries_test.csv")
+        self.entries = EntrySet.from_csv(f"{TEST_DIR}/pd_entries_test.csv")
         self.pd = CompoundPhaseDiagram(self.entries, [Composition("Li2O"), Composition("Fe2O3")])
 
     def test_stable_entries(self):
@@ -696,15 +702,16 @@ class TestCompoundPhaseDiagram(unittest.TestCase):
         assert str(self.pd) == "Xf-Xg phase diagram\n4 stable phases: \nLiFeO2, Li2O, Li5FeO4, Fe2O3"
 
 
-class TestPatchedPhaseDiagram(unittest.TestCase):
+class TestPatchedPhaseDiagram(TestCase):
     def setUp(self):
-        self.entries = EntrySet.from_csv(f"{module_dir}/reaction_entries_test.csv")
+        self.entries = EntrySet.from_csv(f"{TEST_DIR}/phase_diagram/reaction_entries_test.csv")
         # NOTE add He to test for correct behavior despite no patches involving He
         self.no_patch_entry = he_entry = PDEntry("He", -1.23)
         self.entries.add(he_entry)
 
         self.pd = PhaseDiagram(entries=self.entries)
         self.ppd = PatchedPhaseDiagram(entries=self.entries)
+        self.ppd_all = PatchedPhaseDiagram(entries=self.entries, keep_all_spaces=True)
 
         # novel entries not in any of the patches
         self.novel_comps = [Composition("H5C2OP"), Composition("V2PH4C")]
@@ -752,7 +759,11 @@ class TestPatchedPhaseDiagram(unittest.TestCase):
 
         # test dims of sub PDs
         dim_counts = collections.Counter(pd.dim for pd in self.ppd.pds.values())
-        assert dim_counts == {3: 7, 2: 6, 4: 2}
+        assert dim_counts == {4: 2, 3: 2}
+
+        # test dims of sub PDs
+        dim_counts = collections.Counter(pd.dim for pd in self.ppd_all.pds.values())
+        assert dim_counts == {2: 8, 3: 7, 4: 2}
 
     def test_get_hull_energy(self):
         for comp in self.novel_comps:
@@ -768,12 +779,12 @@ class TestPatchedPhaseDiagram(unittest.TestCase):
             assert np.isclose(e_above_hull_pd, e_above_hull_ppd)
 
     def test_repr(self):
-        assert repr(self.ppd) == str(self.ppd) == "PatchedPhaseDiagram covering 15 sub-spaces"
+        assert repr(self.ppd) == str(self.ppd) == "PatchedPhaseDiagram covering 4 sub-spaces"
 
     def test_as_from_dict(self):
         ppd_dict = self.ppd.as_dict()
-        assert ppd_dict["@module"] == self.ppd.__class__.__module__
-        assert ppd_dict["@class"] == self.ppd.__class__.__name__
+        assert ppd_dict["@module"] == type(self.ppd).__module__
+        assert ppd_dict["@class"] == type(self.ppd).__name__
         assert ppd_dict["all_entries"] == [entry.as_dict() for entry in self.ppd.all_entries]
         assert ppd_dict["elements"] == [elem.as_dict() for elem in self.ppd.elements]
         # test round-trip dict serialization
@@ -806,7 +817,8 @@ class TestPatchedPhaseDiagram(unittest.TestCase):
         pd = self.ppd[chem_space]
         assert isinstance(pd, PhaseDiagram)
         assert chem_space in pd._qhull_spaces
-        assert str(pd) == "V-C phase diagram\n4 stable phases: \nC, V, V6C5, V2C"
+        assert len(str(pd)) == 186
+        assert str(pd).startswith("V-H-C-O phase diagram\n25 stable phases:")
 
         with pytest.raises(KeyError, match="frozenset"):
             self.ppd[frozenset(map(Element, "HBCNOFPS"))]
@@ -826,15 +838,28 @@ class TestPatchedPhaseDiagram(unittest.TestCase):
         assert self.ppd[unlikely_chem_space] == self.pd
         del self.ppd[unlikely_chem_space]  # test __delitem__() and restore original state
 
+    def test_remove_redundant_spaces(self):
+        spaces = tuple(frozenset(entry.elements) for entry in self.ppd.qhull_entries)
+        # NOTE this is 5 not 4 as "He" is a non redundant space that gets dropped for other reasons
+        assert len(self.ppd.remove_redundant_spaces(spaces)) == 5
 
-class TestReactionDiagram(unittest.TestCase):
+        test = (
+            list(combinations(range(1, 7), 4))
+            + list(combinations(range(1, 10), 2))
+            + list(combinations([1, 4, 7, 9, 2], 5))
+        )
+        test = [frozenset(t) for t in test]
+        assert len(self.ppd.remove_redundant_spaces(test)) == 30
+
+
+class TestReactionDiagram(TestCase):
     def setUp(self):
-        self.entries = list(EntrySet.from_csv(f"{module_dir}/reaction_entries_test.csv").entries)
-        for e in self.entries:
-            if e.composition.reduced_formula == "VPO5":
-                entry1 = e
-            elif e.composition.reduced_formula == "H4(CO)3":
-                entry2 = e
+        self.entries = list(EntrySet.from_csv(f"{TEST_DIR}/phase_diagram/reaction_entries_test.csv").entries)
+        for entry in self.entries:
+            if entry.reduced_formula == "VPO5":
+                entry1 = entry
+            elif entry.reduced_formula == "H4(CO)3":
+                entry2 = entry
         self.rd = ReactionDiagram(entry1=entry1, entry2=entry2, all_entries=self.entries[2:])
 
     def test_get_compound_pd(self):
@@ -847,7 +872,7 @@ class TestReactionDiagram(unittest.TestCase):
             assert Element.C in entry.composition
             assert Element.P in entry.composition
             assert Element.H in entry.composition
-        # formed_formula = [e.composition.reduced_formula for e in self.rd.rxn_entries]
+        # formed_formula = [entry.reduced_formula for entry in self.rd.rxn_entries]
         # expected_formula = [
         #     "V0.12707182P0.12707182H0.0441989C0.03314917O0.66850829",
         #     "V0.125P0.125H0.05C0.0375O0.6625",
@@ -867,15 +892,15 @@ class TestReactionDiagram(unittest.TestCase):
         #     assert formula in formed_formula, f"{formed_formula=} not in {expected_formula=}"
 
 
-class TestPDPlotter(unittest.TestCase):
+class TestPDPlotter(TestCase):
     def setUp(self):
-        entries = list(EntrySet.from_csv(f"{module_dir}/pd_entries_test.csv"))
+        entries = list(EntrySet.from_csv(f"{TEST_DIR}/pd_entries_test.csv"))
 
-        elemental_entries = [e for e in entries if e.elements == [Element("Li")]]
+        elemental_entries = [entry for entry in entries if entry.elements == [Element("Li")]]
         self.pd_unary = PhaseDiagram(elemental_entries)
         self.plotter_unary_plotly = PDPlotter(self.pd_unary, backend="plotly")
 
-        entries_LiO = [e for e in entries if "Fe" not in e.composition]
+        entries_LiO = [entry for entry in entries if "Fe" not in entry.composition]
         self.pd_binary = PhaseDiagram(entries_LiO)
         self.plotter_binary_mpl = PDPlotter(self.pd_binary, backend="matplotlib")
         self.plotter_binary_plotly = PDPlotter(self.pd_binary, backend="plotly")
@@ -946,7 +971,7 @@ class TestPDPlotter(unittest.TestCase):
             mock_show.assert_called_once()
 
 
-class TestUtilityFunction(unittest.TestCase):
+class TestUtilityFunction:
     def test_unique_lines(self):
         testdata = [
             [5, 53, 353],
