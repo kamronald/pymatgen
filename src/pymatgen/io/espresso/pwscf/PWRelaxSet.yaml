@@ -5,14 +5,14 @@ control:
   forc_conv_thr: 4.d-4
 system:
   ibrav: 0
-  ecutwfc: 100
-  ecutrho: 1100
+  ecutwfc: 70
+  ecutrho: 800
   occupations: smearing
-  degauss: 0.01
-  smearing: mv
+  degauss: 0.005
+  smearing: gauss
   nspin: 2
 electrons:
   electron_maxstep: 100
-  conv_thr: 1.d-6
+  conv_thr: 1.d-9
 kpoint_settings:
   kspacing: 0.25
