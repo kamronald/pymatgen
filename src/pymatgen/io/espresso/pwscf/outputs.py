@@ -61,28 +61,40 @@ class PWOutput:
         site_species = []
         with open(self.filename, 'r') as f:
             all_lines = f.readlines()
+            record_struc = True
             for i, line in enumerate(all_lines):
                 if 'lattice parameter (alat)' in line:
                     self._alat = float(line.split()[-2])
-                    print(self._alat)
-                    alat_units = line.split()[-1]
+                    #print(self._alat)
+                    self._alat_units = line.split()[-1]
 
                 elif 'crystal axes:' in line:
                     for j in range(i+1, i+4):
                         cart_coords = [self._alat*float(v) for v in all_lines[j].split()[-4:-1]]
-                        cart_coords_array = LengthArray(cart_coords, units_d[alat_units])
+                        cart_coords_array = LengthArray(cart_coords, units_d[self._alat_units])
                         #cart_coords_ang = np.array(cart_coords_array.to('ang'))
                         initial_crystal_axes.append(cart_coords_array)
 
-                elif 'site n.' in line and 'atom' in line:
+                elif 'site n.' in line and 'atom' in line and record_struc:
                     for line_2 in all_lines[i+1:]:
                         line_items = line_2.split()
                         if len(line_items) == 0:
+                            record_struc = False
                             break
-                        site_species.append(Species(line_items[1]))
+
+                        spec_name = line_items[1]
+                        if spec_name[-1].isdigit():
+                            spec = ''
+                            for char in spec_name:
+                                if not char.isdigit():
+                                    spec += char
+                        else:
+                            spec = spec_name
+
+                        site_species.append(Species(spec))
                         initial_ion_positions.append(
                             LengthArray([float(v) * self._alat for v in line_items[-4:-1]],
-                                        units_d[alat_units])
+                                        units_d[self._alat_units])
                         )
                 elif 'number of k points' in line:
                     break
@@ -148,7 +160,7 @@ class PWOutput:
 
         # set self._final_structure - convert to Angstroms!!
         if relax:
-            print('Relaxation occured')
+            print('Relaxation occurred')
             if not len(struc_d['cell_params']):
                 lattice = init_lattice
             else:
@@ -233,7 +245,19 @@ class PWOutput:
                     if not len(line_f_vals):
                         record_positions = False
                         continue
-                    all_species.append(line_f_vals[0])
+
+                    spec_str = line_f_vals[0]
+
+                    if spec_str[-1].isdigit():
+                        new_spec_str = ''
+                        for char in spec_str:
+                            if char.isdigit():
+                                break
+                            new_spec_str += char
+                    else:
+                        new_spec_str = spec_str
+
+                    all_species.append(new_spec_str)
                     coords = np.array([float(v) for v in line_f_vals[1:]])
                     all_coords.append(coords)
 
