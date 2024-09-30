@@ -104,22 +104,34 @@ class PWInputSet(MSONable, metaclass=ABCMeta):
                 self.hubbard_model = HubbardModel(self.structure)
 
         if k_grid is None:
-
+            print(self.pseudo)
             self.pw_input = PWInput(
-                self.structure, self.pseudo, self.sections['control'],
-                self.sections['system'],
-                self.sections['electrons'], self.sections['ions'], self.sections['cell'],
-                kpoints_mode='crystal', hubbard_model=self.hubbard_model
+                structure=self.structure,
+                struc_sorting_type='hubbards_first',
+                pseudo=self.pseudo,
+                control=self.sections['control'],
+                system=self.sections['system'],
+                electrons=self.sections['electrons'],
+                ions=self.sections['ions'],
+                cell=self.sections['cell'],
+                kpoints_mode='crystal',
+                hubbard_model=self.hubbard_model
             )
 
         else:
             print(k_grid)
             print(self.pseudo)
             self.pw_input = PWInput(
-                self.structure, self.pseudo, self.sections['control'],
-                self.sections['system'],
-                self.sections['electrons'], self.sections['ions'],
-                self.sections['cell'], kpoints_grid=k_grid, hubbard_model=self.hubbard_model
+                structure=self.structure,
+                struc_sorting_type='hubbards_first',
+                pseudo=self.pseudo,
+                control=self.sections['control'],
+                system=self.sections['system'],
+                electrons=self.sections['electrons'],
+                ions=self.sections['ions'],
+                cell=self.sections['cell'],
+                kpoints_grid=k_grid,
+                hubbard_model=self.hubbard_model
             )
 
     def update_section(self, section_name, settings):
