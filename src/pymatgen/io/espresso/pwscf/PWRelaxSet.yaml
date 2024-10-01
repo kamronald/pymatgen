@@ -3,6 +3,8 @@ control:
   calculation: vc-relax
   nstep: 100
   forc_conv_thr: 4.d-4
+  verbosity: high
+  outdir: tmp
 system:
   ibrav: 0
   ecutwfc: 70
