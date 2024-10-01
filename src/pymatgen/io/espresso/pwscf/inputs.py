@@ -12,7 +12,7 @@ from monty.io import zopen, reverse_readfile
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 
-from pymatgen.core import Element, Lattice, Structure
+from pymatgen.core import Element, Lattice, Structure, Species, PeriodicSite
 from pymatgen.util.io_utils import clean_lines
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.string import str_delimited
@@ -28,7 +28,7 @@ class PWInput:
     def __init__(
         self,
         structure,
-        struc_sorting_type=None,
+        struc_sorting_type="hubbards_first",
         pseudo=None,
         control=None,
         system=None,
@@ -74,6 +74,8 @@ class PWInput:
             self.structure = structure.get_sorted_structure()
         elif struc_sorting_type == 'hubbards_first':
             self.sort_structure_hubbards()
+
+        self.structure = self.add_species_labels(self.structure)
 
         #self.symmetrize = symmetrize
         #self.symprec = symprec
@@ -140,6 +142,10 @@ class PWInput:
             v1 = self.sections[k1]
             out.append(f"&{k1.upper()}")
             sub = []
+            updated_site_descriptions = {}
+            for i, (site, spec) in enumerate(zip(self.structure, self.structure.species)):
+                updated_site_descriptions[spec.symbol] = site_descriptions[spec.symbol]
+
             for k2 in sorted(v1):
                 if isinstance(v1[k2], list):
                     n = 1
@@ -154,16 +160,30 @@ class PWInput:
                 if "nat" not in self.sections[k1]:
                     sub.append(f"  nat = {len(self.structure)}")
                 if "ntyp" not in self.sections[k1]:
-                    sub.append(f"  ntyp = {len(site_descriptions)}")
-                if self.structure.site_properties.get('magmom') and int(self.sections['system'].get('nspin')) == 2:
-                    for j, magmom in enumerate(self.structure.site_properties['magmom']):
-                        if abs(magmom) > 0.02:
-                            sub.append(f"  starting_magnetization({j+1}) = {magmom}")
+                    sub.append(f"  ntyp = {len(updated_site_descriptions)}")
+
+                if self.structure.site_properties.get('magmom') and self.sections['system'].get('nspin') == 2:
+                    labels_ind_map = {}
+                    spec_ind = 1
+                    for site in self.structure:
+                        spec_label = site.properties['species_label']
+                        magmom = site.properties['magmom']
+                        if spec_label not in labels_ind_map:
+                            labels_ind_map[spec_label] = spec_ind
+                            if abs(magmom) > 0.2:
+                                sub.append(f"  starting_magnetization({spec_ind}) = {magmom}")
+
+                            spec_ind += 1
+
+                        else:
+                            continue
             sub.append("/")
             out.append(",\n".join(sub))
 
         out.append("ATOMIC_SPECIES")
-        for k, v in sorted(site_descriptions.items(), key=lambda i: i[0]):
+
+
+        for k, v in updated_site_descriptions.items():
             e = re.match(r"[A-Z][a-z]?", k).group(0)
             p = v if self.pseudo is not None else v["pseudo"]
             out.append(f"  {k}  {Element(e).atomic_mass:.4f} {p}")
@@ -171,7 +191,12 @@ class PWInput:
         out.append("ATOMIC_POSITIONS crystal")
         if self.pseudo is not None:
             for i, site in enumerate(self.structure):
-                out.append(f"  {site.specie.symbol}{i+1} {site.a:.6f} {site.b:.6f} {site.c:.6f}")
+                if 'species_label' in site.properties:
+                    this_spec_sym = site.properties['species_label']
+                else:
+                    this_spec_sym = site.specie.symbol
+
+                out.append(f"  {this_spec_sym}   {site.a:.6f}   {site.b:.6f}   {site.c:.6f}")
         else:
             for i, site in enumerate(self.structure):
                 name = None
@@ -277,6 +302,59 @@ class PWInput:
                 reordered_sites.extend([self.structure[i] for i in site_inds])
 
         self.structure = Structure.from_sites(reordered_sites)
+
+    def add_species_labels(self, structure):
+        """
+        Add appropriate labeling of species on each site. Species with up and down spins will need to be separately labeled
+        (e.g. Mn(up) - Mn1, Mn(down) - Mn2
+
+        Args:
+            structure (Structure)
+
+        Returns:
+            labeled_structure (Structure) - with new site property "species_label"
+
+        """
+        spec_map = {}
+        if 'magmom' not in structure.site_properties:
+            spec_labels = [s.element.__str__() if type(s) != Element else s.__str__() for s in structure.species]
+
+        else:
+            significant_mags = np.array([m for m in structure.site_properties['magmom'] if abs(m) > 0.2])
+            if np.all(significant_mags > 0):  # ferromagnetic - no need to number the species
+                spec_labels = [s.element.__str__() if type(s) != Element else s.__str__() for s in structure.species]
+
+            else:  # Contains up and down spins - need to distinguish them
+                spec_ind = 1
+                spec_labels = []
+
+                for site, spec in zip(structure, structure.species):
+                    mag = site.properties['magmom']
+                    el = spec.element.__str__() if type(spec) != Element else spec.__str__()
+                    if abs(mag) > 0.2:  # need to label the magnetic species
+                        if mag > 0:
+                            this_label = f"{el}_up"
+                        else:
+                            this_label = f"{el}_down"
+
+                        if this_label not in spec_map:
+                            this_spec_label = f"{el}{spec_ind}"
+                            spec_ind += 1
+                            spec_map[this_label] = this_spec_label
+                        else:
+                            this_spec_label = spec_map[this_label]
+
+                    else:
+                        this_spec_label = el
+                        if el not in spec_map:
+                            spec_map[el] = el
+                            spec_ind += 1
+
+                    spec_labels.append(this_spec_label)
+
+        labeled_structure = structure.copy()
+        labeled_structure.add_site_property('species_label', spec_labels)
+        return labeled_structure
 
     def make_default_hubbard(self):
         self.hubbard_model = HubbardModel(self.structure)
