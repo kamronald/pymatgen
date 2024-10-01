@@ -144,7 +144,7 @@ class PWInput:
             sub = []
             updated_site_descriptions = {}
             for i, (site, spec) in enumerate(zip(self.structure, self.structure.species)):
-                updated_site_descriptions[spec.symbol] = site_descriptions[spec.symbol]
+                updated_site_descriptions[site.properties['species_label']] = site_descriptions[spec.symbol]
 
             for k2 in sorted(v1):
                 if isinstance(v1[k2], list):
