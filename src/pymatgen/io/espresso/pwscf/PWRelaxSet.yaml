@@ -2,7 +2,7 @@
 control:
   calculation: vc-relax
   nstep: 100
-  forc_conv_thr: 4.d-4
+  forc_conv_thr: 4e-4
   verbosity: high
   outdir: tmp
 system:
@@ -15,6 +15,6 @@ system:
   nspin: 2
 electrons:
   electron_maxstep: 100
-  conv_thr: 1.d-9
+  conv_thr: 1e-9
 kpoint_settings:
   kspacing: 0.25
