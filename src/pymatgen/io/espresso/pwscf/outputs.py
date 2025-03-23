@@ -11,7 +11,7 @@ from monty.re import regrep
 from pymatgen.core import Element, Lattice, Structure, Species, PeriodicSite
 from pymatgen.core.units import Energy, Length, EnergyArray, LengthArray
 from pymatgen.util.io_utils import clean_lines
-from pymatgen.electronic_structure.bandstructure import Kpoint, BandStructure
+from pymatgen.electronic_structure.bandstructure import Kpoint, BandStructure, Spin
 
 class PWOutput:
     """
@@ -339,6 +339,142 @@ class PWOutput:
     def converged_electronic(self):
         return self.data['converged_el']
 
-    def get_band_structure(self):
-        # Get K-points, band energies, and lattice
-        pass
+    def get_band_structure(self, fermi_e=None):
+        # Get K-points, band energies, lattice, and Fermi energy.
+        fermi_level = self.e_fermi if fermi_e is None else fermi_e
+        if not fermi_level:
+            fermi_level = 0
+            raise RuntimeWarning('Fermi level could not be found, setting to 0 eV.')
+        fermi_level += 0.0001
+
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
+
+
+        spin_polarized = False
+        found_bands = False
+        for i, l in enumerate(reversed(lines)):
+            if 'SPIN UP' in l:
+                up_start_ind = len(lines) - i - 1
+                found_bands = True
+                break
+
+        if not found_bands:
+            raise RuntimeError(
+                'Band structure could not be found! Be sure to'
+                'set "verbosity = high" when running!'
+            )
+
+        # Find lines where a k point is listed
+        kpt_inds = []
+        kpoints = []
+        band_ens = []
+
+        for i, l in enumerate(lines):
+            if i <= up_start_ind:
+                continue
+            if 'SPIN DOWN' in l:
+                spin_polarized = True
+                spin_dn_ind = i
+                break
+            elif 'total energy' in l or 'accuracy' in l or 'Writing all' in l:
+                break
+            items = l.split()
+            if 'k =' in l:  # record the k point
+                #print('found k point')
+                kpt_inds.append(i)
+                if len(items) == 10:
+                    coords = np.array([float(items[i]) for i in range(2, 5)])
+
+                else:
+                    coords = []
+                    for item in items[1:]:
+                        if '=' in item and len(item) == 1:
+                            continue
+
+                        try:
+                            coord = float(item)
+                            coords.append(coord)
+                            if len(coords) == 3:
+                                break
+                        except:
+                            coord_s = ''
+                            for n, el in enumerate(item):
+                                if el == '=':
+                                    continue
+                                if el == '-' and len(coord_s) != 0:
+                                    coords.append(float(coord_s))
+                                    coord_s = '-'  # reset the number
+                                    continue
+
+                                else:
+                                    coord_s += el
+
+                            coords.append(float(coord_s))
+
+                        if len(coords) == 3:
+                            break
+
+                print('coord', coords)
+                #kpt = Kpoint(coords=coords, lattice=self.final_structure.lattice)
+                #print('kpt:', kpt)
+                kpoints.append(coords)
+
+        print('Number of k points', len(kpoints))
+
+
+        for ind in kpt_inds:  # Record the up spin band structure
+            start_ind = ind + 2
+            kpt_ens = []
+            for l in lines[start_ind:]:
+                items = l.split()
+                if not len(items):
+                    break
+                kpt_ens.extend([float(item) for item in items])
+            band_ens.append(kpt_ens)
+
+        eigenvals_arr = np.array(band_ens)
+        eigenvals_arr = eigenvals_arr.T
+        eigenvals_d = {Spin(+1): eigenvals_arr}
+        if not spin_polarized:
+            return BandStructure(
+                kpoints=kpoints,
+                eigenvals=eigenvals_d,
+                lattice=self.final_structure.lattice.reciprocal_lattice,
+                efermi=fermi_level
+            )
+
+        # Now record the spin down band structure
+
+        band_ens_dn = []
+        kpt_inds_dn = []
+
+        for i, l in enumerate(lines[spin_dn_ind:]):
+            act_ind = i + spin_dn_ind
+            if 'total energy' in l or 'accuracy' in l or 'Writing all' in l:
+                break
+            if 'k =' in l:  # record the k point indices
+                kpt_inds_dn.append(act_ind)
+
+        # Record the miniority spin band structure
+        for ind in kpt_inds_dn:
+            start_ind = ind + 2
+            kpt_ens = []
+            for l in lines[start_ind:]:
+                items = l.split()
+                if not len(items):
+                    break
+                kpt_ens.extend([float(item) for item in items])
+            band_ens_dn.append(kpt_ens)
+
+        eigenvals_arr_dn = np.array(band_ens_dn)
+        eigenvals_arr_dn = eigenvals_arr_dn.T
+
+        eigenvals_d[Spin(-1)] = eigenvals_arr_dn
+
+        return BandStructure(
+            kpoints=kpoints,
+            eigenvals=eigenvals_d,
+            lattice=self.final_structure.lattice.reciprocal_lattice,
+            efermi=fermi_level
+            )

@@ -662,6 +662,7 @@ class HubbardModel(MSONable):
     def __init__(
         self,
         structure,
+        flavor='extended',
         hub_projectors='ortho-atomic',
         u_vals=None,
         u_atom_manifold=None,
@@ -676,8 +677,11 @@ class HubbardModel(MSONable):
         Args:
             structure (Structure):
                 Structure that Hubbard model is for.
+            flavor (str):
+                "onsite" - Hubbard U only, or "extended" - Hubbard U+V, with V being the inter-site term
             hub_projectors (str):
                 Type of Hubbard projector, 'ortho-atomic' is preferred. The PW
+                Type of Hubbard projector, 'ortho-atomic' is usually most accurate. The PW
                 input docs have more info.
             u_vals (list):
                 List of Hubbard U values (eV)
@@ -687,6 +691,7 @@ class HubbardModel(MSONable):
             v_vals (list):
                 List of Hubbard V values (eV)
         """
+        self.flavor = flavor
         self.structure = structure
         if hub_projectors not in ['ortho-atomic', 'atomic', 'norm-atomic', 'wf',
                                   'pseudo']:
@@ -711,6 +716,66 @@ class HubbardModel(MSONable):
                 (atom_man_i, atom_man_j), (i, j), v in
                 zip(v_atoms_manifolds, v_atoms_inds, v_vals)
                                ]
+
+    @classmethod
+    def from_default_hubbards(cls, structure, user_hubbards=None, flavor='extended'):
+        """
+        Generate a HubbardModel from default or user-input Hubbard values. At the moment, we can only generate
+        HubbardModels using averaged Hubbard U for each species. The "extended" model will simply contain on-site
+        Hubbard U terms, since the method of generating inter-site couple indices within QE is not known.
+
+        Args:
+            structure:
+            user_hubbards (dict): Dictionary specifying the Hubbard value to use for a species. Keys are the specie and
+                                    orbital manifold, values are the Hubbard values. (e.g. {Mn-3d: 6.0})
+            flavor (str): "onsite" (U only) or "extended" (U+V)
+
+        Returns:
+            HubbardModel
+
+        """
+        if user_hubbards is None:
+            user_hubbards = {}
+        else:
+            spec_label_map = {}
+            for spec_manifold in user_hubbards.keys():
+                spec = spec_manifold.split('-')[0]
+                spec_label_map[spec] = spec_manifold
+
+        print(user_hubbards)
+
+        default_hubbards = loadfn(os.path.join(MODULE_DIR, 'default_hubbard_u.yaml'))
+        structure_ns = structure.copy()
+        structure_ns.remove_spin()
+
+        hubbard_vals = []
+        hubbard_at_manifold = []
+        hubbard_at_inds = []
+
+        for n, (site, spec) in enumerate(zip(structure, structure.species)):
+            el = spec.__str__() if type(spec) == Element else spec.element.__str__()
+            if el in user_hubbards:
+                keys = [k for k in spec_label_map[el].keys()]
+                manifold = keys[0]
+                hubb_u = user_hubbards[el][manifold]
+
+            elif el in default_hubbards:
+                keys = [k for k in spec_label_map[el].keys()]
+                manifold = keys[0]
+                hubb_u = default_hubbards[el][manifold]
+
+            else:
+                continue  # Skip the species that do not have a default or user-specified value
+
+            if flavor == 'extended':
+                hubbard_vals.append(hubb_u)
+                hubbard_at_manifold.append((spec_label_map[el], spec_label_map[el]))
+                hubbard_at_inds.append((n, n))
+
+        return cls(
+            structure=structure, flavor=flavor, u_vals=None, u_atom_manifold=None, v_vals=hubbard_vals,
+            v_atoms_manifolds=hubbard_at_manifold, v_atoms_inds=hubbard_at_inds
+        )
 
     def gen_hubbard_u_from_default(self):
         # Find the species in a structure and attempt to find it in the default hubbards dict
@@ -742,13 +807,15 @@ class HubbardModel(MSONable):
     def __str__(self):
         out = []
         out.append("HUBBARD {}{}{}".format(r"{", self.hub_projectors, r"}"))
-        for hub_tup in self.hubbard_us:
-            u_line = f"U    {hub_tup[0]}    {hub_tup[1]}"
-            out.append(u_line)
 
-        for hub_tup in self.hubbard_vs:
-            u_line = f"V    {hub_tup[0]}    {hub_tup[1]}    {hub_tup[2]}    {hub_tup[3]}"
-            out.append(u_line)
+        if self.flavor != 'extended':
+            for hub_tup in self.hubbard_us:
+                u_line = f"U    {hub_tup[0]}    {hub_tup[1]}"
+                out.append(u_line)
+        else:
+            for hub_tup in self.hubbard_vs:
+                u_line = f"V    {hub_tup[0]}    {hub_tup[1]}    {hub_tup[2]}    {hub_tup[3]}"
+                out.append(u_line)
 
         return "\n".join(out)
 
