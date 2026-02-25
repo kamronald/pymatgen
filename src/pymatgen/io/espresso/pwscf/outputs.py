@@ -171,13 +171,15 @@ class PWOutput:
                 in zip(struc_d['species'], struc_d['coords'])
             ]
             structure = Structure.from_sites(sites)
-            if self.data['magmom'] is not None:
-                structure.add_site_property('magmom', self.data['magmom'])
+
 
             self._final_structure = structure
 
         else:
             self._final_structure = self._initial_structure
+
+        if self.data['magmom'] is not None:
+            self._final_structure.add_site_property('magmom', self.data['magmom'])
 
     def read_pattern(self, patterns, reverse=False, terminate_on_match=False,
                      postprocess=str):
